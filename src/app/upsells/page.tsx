@@ -8,10 +8,12 @@ import { Upsell } from '@/types';
 
 const categoryLabels: Record<string, string> = {
   all: 'All Add-ons',
+  pool_heating: 'Pool Heating',
   early_checkin: 'Early Check-in',
   late_checkout: 'Late Check-out',
+  extras: 'Extras',
   service: 'Services',
-  experience: 'Experiences',
+  event: 'Events',
 };
 
 export default function UpsellsPage() {

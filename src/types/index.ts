@@ -58,7 +58,7 @@ export interface Upsell {
   description: string;
   price: number;
   currency: string;
-  category: 'early_checkin' | 'late_checkout' | 'service' | 'experience';
+  category: 'pool_heating' | 'early_checkin' | 'late_checkout' | 'extras' | 'service' | 'event';
   image?: string;
 }
 
