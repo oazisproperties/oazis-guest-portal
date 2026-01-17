@@ -1,10 +1,17 @@
 import { Reservation, Property, Payment } from '@/types';
+import { kv } from '@vercel/kv';
 
 const GUESTY_API_URL = 'https://open-api.guesty.com/v1';
+const TOKEN_CACHE_KEY = 'guesty_access_token';
 
-// Token cache to avoid rate limits (tokens are valid for 24 hours)
-let cachedToken: string | null = null;
-let tokenExpiry: number = 0;
+// In-memory fallback for local development
+let localCachedToken: string | null = null;
+let localTokenExpiry: number = 0;
+
+interface CachedToken {
+  token: string;
+  expiry: number;
+}
 
 async function getAccessToken(): Promise<string> {
   // Check for manually provided token first (useful when rate limited)
@@ -13,10 +20,24 @@ async function getAccessToken(): Promise<string> {
     return process.env.GUESTY_ACCESS_TOKEN;
   }
 
-  // Return cached token if still valid (with 5 minute buffer)
-  if (cachedToken && Date.now() < tokenExpiry - 300000) {
-    console.log('Using cached Guesty access token');
-    return cachedToken;
+  // Try to get token from Vercel KV (production) or local cache (development)
+  try {
+    if (process.env.KV_REST_API_URL) {
+      // Production: Use Vercel KV
+      const cached = await kv.get<CachedToken>(TOKEN_CACHE_KEY);
+      if (cached && Date.now() < cached.expiry - 300000) {
+        console.log('Using cached Guesty access token from KV');
+        return cached.token;
+      }
+    } else {
+      // Development: Use in-memory cache
+      if (localCachedToken && Date.now() < localTokenExpiry - 300000) {
+        console.log('Using cached Guesty access token (local)');
+        return localCachedToken;
+      }
+    }
+  } catch (err) {
+    console.error('Error reading token cache:', err);
   }
 
   console.log('Requesting new Guesty access token...');
@@ -46,12 +67,23 @@ async function getAccessToken(): Promise<string> {
   }
 
   const data = await response.json();
+  const expiry = Date.now() + (data.expires_in * 1000);
 
-  // Cache the token (expires_in is in seconds, typically 86400 = 24 hours)
-  cachedToken = data.access_token;
-  tokenExpiry = Date.now() + (data.expires_in * 1000);
-
-  console.log('Got new Guesty access token, valid for', data.expires_in, 'seconds');
+  // Cache the token
+  try {
+    if (process.env.KV_REST_API_URL) {
+      // Production: Store in Vercel KV (expires in 23 hours to be safe)
+      await kv.set(TOKEN_CACHE_KEY, { token: data.access_token, expiry }, { ex: 82800 });
+      console.log('Stored Guesty access token in KV, valid for', data.expires_in, 'seconds');
+    } else {
+      // Development: Store in memory
+      localCachedToken = data.access_token;
+      localTokenExpiry = expiry;
+      console.log('Stored Guesty access token locally, valid for', data.expires_in, 'seconds');
+    }
+  } catch (err) {
+    console.error('Error caching token:', err);
+  }
 
   return data.access_token;
 }
