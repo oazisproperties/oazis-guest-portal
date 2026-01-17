@@ -53,7 +53,7 @@ async function getAccessToken(): Promise<string> {
 
   console.log('Got new Guesty access token, valid for', data.expires_in, 'seconds');
 
-  return cachedToken;
+  return data.access_token;
 }
 
 async function guestyFetch(endpoint: string, params?: Record<string, string>) {
