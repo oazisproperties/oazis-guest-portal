@@ -63,6 +63,11 @@ export default function DashboardPage() {
     }).format(amount);
   };
 
+  // Extract first name from full name
+  const getFirstName = (fullName: string) => {
+    return fullName.split(' ')[0];
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-oazis-cream-light">
@@ -91,58 +96,97 @@ export default function DashboardPage() {
   }
 
   const property = reservation.listing;
+  const guestFirstName = getFirstName(reservation.guestName);
 
   return (
     <div className="min-h-screen bg-oazis-cream-light">
-      {/* Header */}
-      <header className="bg-oazis-purple text-white">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/logo.png"
-              alt="oAZis Properties"
-              width={40}
-              height={40}
-              className="rounded-full bg-white p-1"
-            />
-            <h1 className="text-xl font-semibold">Guest Portal</h1>
+      {/* Hero Cover Photo */}
+      {property?.picture?.regular && (
+        <div className="relative h-64 md:h-80 w-full">
+          <img
+            src={property.picture.regular}
+            alt={property.nickname}
+            className="w-full h-full object-cover"
+          />
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+          {/* Header overlay */}
+          <header className="absolute top-0 left-0 right-0 z-10">
+            <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/logo.png"
+                  alt="oAZis Properties"
+                  width={40}
+                  height={40}
+                  className="rounded-full bg-white p-1"
+                />
+                <h1 className="text-xl font-semibold text-white drop-shadow-lg">Guest Portal</h1>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-white/90 hover:text-white transition drop-shadow-lg"
+              >
+                Log out
+              </button>
+            </div>
+          </header>
+
+          {/* Welcome text on cover photo */}
+          <div className="absolute bottom-0 left-0 right-0 p-6">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                Welcome to {property.nickname}, {guestFirstName}
+              </h2>
+              <p className="text-white/90 mt-2 drop-shadow">
+                Confirmation: <span className="font-mono">{reservation.confirmationCode}</span>
+              </p>
+            </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-oazis-cream hover:text-white transition"
-          >
-            Log out
-          </button>
         </div>
-      </header>
+      )}
+
+      {/* Fallback header if no cover photo */}
+      {!property?.picture?.regular && (
+        <header className="bg-oazis-purple text-white">
+          <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="oAZis Properties"
+                width={40}
+                height={40}
+                className="rounded-full bg-white p-1"
+              />
+              <h1 className="text-xl font-semibold">Guest Portal</h1>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-oazis-cream hover:text-white transition"
+            >
+              Log out
+            </button>
+          </div>
+          <div className="max-w-4xl mx-auto px-4 pb-6">
+            <h2 className="text-3xl font-bold">
+              Welcome to {property?.nickname || 'Your Stay'}, {guestFirstName}
+            </h2>
+            <p className="text-oazis-cream mt-2">
+              Confirmation: <span className="font-mono">{reservation.confirmationCode}</span>
+            </p>
+          </div>
+        </header>
+      )}
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-oazis-purple">
-            Welcome, {reservation.guestName}!
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Confirmation: <span className="font-mono text-oazis-teal">{reservation.confirmationCode}</span>
-          </p>
-        </div>
-
-        {/* Property Card */}
+        {/* Property Address Card */}
         {property && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-            {property.picture?.regular && (
-              <img
-                src={property.picture.regular}
-                alt={property.nickname}
-                className="w-full h-48 object-cover"
-              />
-            )}
-            <div className="p-6">
-              <h3 className="text-xl font-semibold text-oazis-purple mb-2">
-                {property.nickname}
-              </h3>
-              <p className="text-gray-600">{property.address.full}</p>
-            </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h3 className="text-xl font-semibold text-oazis-purple mb-2">
+              {property.nickname}
+            </h3>
+            <p className="text-gray-600">{property.address.full}</p>
           </div>
         )}
 
