@@ -1,5 +1,5 @@
 import { Reservation, Property, Payment } from '@/types';
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
 
 const GUESTY_API_URL = 'https://open-api.guesty.com/v1';
 const TOKEN_CACHE_KEY = 'guesty_access_token';
@@ -13,6 +13,17 @@ interface CachedToken {
   expiry: number;
 }
 
+// Initialize Redis client only if credentials are available
+function getRedis(): Redis | null {
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+  }
+  return null;
+}
+
 async function getAccessToken(): Promise<string> {
   // Check for manually provided token first (useful when rate limited)
   if (process.env.GUESTY_ACCESS_TOKEN) {
@@ -20,13 +31,15 @@ async function getAccessToken(): Promise<string> {
     return process.env.GUESTY_ACCESS_TOKEN;
   }
 
-  // Try to get token from Vercel KV (production) or local cache (development)
+  const redis = getRedis();
+
+  // Try to get token from Redis (production) or local cache (development)
   try {
-    if (process.env.KV_REST_API_URL) {
-      // Production: Use Vercel KV
-      const cached = await kv.get<CachedToken>(TOKEN_CACHE_KEY);
+    if (redis) {
+      // Production: Use Upstash Redis
+      const cached = await redis.get<CachedToken>(TOKEN_CACHE_KEY);
       if (cached && Date.now() < cached.expiry - 300000) {
-        console.log('Using cached Guesty access token from KV');
+        console.log('Using cached Guesty access token from Redis');
         return cached.token;
       }
     } else {
@@ -71,10 +84,10 @@ async function getAccessToken(): Promise<string> {
 
   // Cache the token
   try {
-    if (process.env.KV_REST_API_URL) {
-      // Production: Store in Vercel KV (expires in 23 hours to be safe)
-      await kv.set(TOKEN_CACHE_KEY, { token: data.access_token, expiry }, { ex: 82800 });
-      console.log('Stored Guesty access token in KV, valid for', data.expires_in, 'seconds');
+    if (redis) {
+      // Production: Store in Upstash Redis (expires in 23 hours to be safe)
+      await redis.set(TOKEN_CACHE_KEY, { token: data.access_token, expiry }, { ex: 82800 });
+      console.log('Stored Guesty access token in Redis, valid for', data.expires_in, 'seconds');
     } else {
       // Development: Store in memory
       localCachedToken = data.access_token;
