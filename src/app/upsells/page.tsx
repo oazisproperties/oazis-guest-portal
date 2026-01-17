@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Upsell } from '@/types';
 
 const categoryLabels: Record<string, string> = {
@@ -97,24 +98,33 @@ export default function UpsellsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
+      <div className="min-h-screen flex items-center justify-center bg-oazis-cream-light">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-oazis-purple"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-oazis-cream-light">
+      <header className="bg-oazis-purple text-white sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-slate-600 hover:text-slate-900">
+            <Link href="/dashboard" className="text-oazis-cream hover:text-white transition">
               ← Back
             </Link>
-            <h1 className="text-xl font-semibold text-slate-900">Add-ons</h1>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="oAZis Properties"
+                width={32}
+                height={32}
+                className="rounded-full bg-white p-0.5"
+              />
+              <h1 className="text-xl font-semibold">Add-ons</h1>
+            </div>
           </div>
           {cart.length > 0 && (
-            <div className="text-sm text-slate-600">
+            <div className="text-sm text-oazis-cream">
               {cart.length} item{cart.length > 1 ? 's' : ''} in cart
             </div>
           )}
@@ -130,8 +140,8 @@ export default function UpsellsPage() {
               onClick={() => setSelectedCategory(key)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
                 selectedCategory === key
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  ? 'bg-oazis-purple text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
               }`}
             >
               {label}
@@ -146,23 +156,23 @@ export default function UpsellsPage() {
             return (
               <div
                 key={upsell.id}
-                className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
               >
                 <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-semibold text-slate-900">{upsell.name}</h3>
-                  <span className="text-lg font-bold text-slate-900">
+                  <h3 className="font-semibold text-gray-900">{upsell.name}</h3>
+                  <span className="text-lg font-bold text-oazis-purple">
                     {formatCurrency(upsell.price, upsell.currency)}
                   </span>
                 </div>
-                <p className="text-sm text-slate-600 mb-4">{upsell.description}</p>
+                <p className="text-sm text-gray-600 mb-4">{upsell.description}</p>
                 <button
                   onClick={() =>
                     inCart ? removeFromCart(upsell.id) : addToCart(upsell)
                   }
                   className={`w-full py-2 px-4 rounded-lg font-medium transition ${
                     inCart
-                      ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      : 'bg-slate-900 text-white hover:bg-slate-800'
+                      ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-oazis-purple text-white hover:bg-oazis-purple-dark'
                   }`}
                 >
                   {inCart ? 'Remove from Cart' : 'Add to Cart'}
@@ -174,20 +184,20 @@ export default function UpsellsPage() {
 
         {/* Cart Footer */}
         {cart.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-lg">
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
             <div className="max-w-4xl mx-auto flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-gray-600">
                   {cart.length} item{cart.length > 1 ? 's' : ''}
                 </p>
-                <p className="text-xl font-bold text-slate-900">
+                <p className="text-xl font-bold text-oazis-purple">
                   {formatCurrency(cartTotal)}
                 </p>
               </div>
               <button
                 onClick={handleCheckout}
                 disabled={checkoutLoading}
-                className="bg-slate-900 text-white px-8 py-3 rounded-lg font-medium hover:bg-slate-800 transition disabled:opacity-50"
+                className="bg-oazis-orange text-white px-8 py-3 rounded-lg font-medium hover:bg-oazis-orange-dark transition disabled:opacity-50"
               >
                 {checkoutLoading ? 'Processing...' : 'Checkout'}
               </button>
@@ -195,6 +205,10 @@ export default function UpsellsPage() {
           </div>
         )}
       </main>
+
+      <footer className="pb-8 text-center text-sm text-gray-500">
+        oAZis Properties &bull; Tucson, AZ
+      </footer>
     </div>
   );
 }

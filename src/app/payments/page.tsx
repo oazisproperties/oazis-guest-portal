@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Payment } from '@/types';
 
 export default function PaymentsPage() {
@@ -50,47 +51,56 @@ export default function PaymentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
+      <div className="min-h-screen flex items-center justify-center bg-oazis-cream-light">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-oazis-purple"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
+    <div className="min-h-screen bg-oazis-cream-light">
+      <header className="bg-oazis-purple text-white">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/dashboard" className="text-slate-600 hover:text-slate-900">
+          <Link href="/dashboard" className="text-oazis-cream hover:text-white transition">
             ← Back
           </Link>
-          <h1 className="text-xl font-semibold text-slate-900">Payment History</h1>
+          <div className="flex items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="oAZis Properties"
+              width={32}
+              height={32}
+              className="rounded-full bg-white p-0.5"
+            />
+            <h1 className="text-xl font-semibold">Payment History</h1>
+          </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         {payments.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
-            <p className="text-slate-600">No payments recorded yet.</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+            <p className="text-gray-600">No payments recorded yet.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="divide-y divide-slate-200">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="divide-y divide-gray-200">
               {payments.map((payment) => (
                 <div key={payment.id} className="p-4 flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-slate-900">{payment.description}</p>
-                    <p className="text-sm text-slate-500">{formatDate(payment.date)}</p>
+                    <p className="font-medium text-gray-900">{payment.description}</p>
+                    <p className="text-sm text-gray-500">{formatDate(payment.date)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-slate-900">
+                    <p className="font-semibold text-gray-900">
                       {formatCurrency(payment.amount, payment.currency)}
                     </p>
                     <span
                       className={`inline-block px-2 py-1 text-xs rounded-full ${
                         payment.status === 'paid'
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-oazis-teal/20 text-oazis-teal'
                           : payment.status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-700'
+                          ? 'bg-oazis-orange/20 text-oazis-orange'
                           : 'bg-red-100 text-red-700'
                       }`}
                     >
@@ -103,6 +113,10 @@ export default function PaymentsPage() {
           </div>
         )}
       </main>
+
+      <footer className="mt-12 pb-8 text-center text-sm text-gray-500">
+        oAZis Properties &bull; Tucson, AZ
+      </footer>
     </div>
   );
 }

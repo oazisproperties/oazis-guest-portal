@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [confirmationCode, setConfirmationCode] = useState('');
@@ -39,12 +40,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-oazis-cream-light px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <Image
+              src="/logo.png"
+              alt="oAZis Properties"
+              width={150}
+              height={150}
+              priority
+            />
+          </div>
+
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-900">Welcome</h1>
-            <p className="text-slate-600 mt-2">
+            <h1 className="text-2xl font-bold text-oazis-purple">Welcome to Your Stay</h1>
+            <p className="text-gray-600 mt-2">
               Enter your reservation code to access your stay details
             </p>
           </div>
@@ -53,7 +65,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="confirmationCode"
-                className="block text-sm font-medium text-slate-700 mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Confirmation Code
               </label>
@@ -62,8 +74,8 @@ export default function LoginPage() {
                 type="text"
                 value={confirmationCode}
                 onChange={(e) => setConfirmationCode(e.target.value.toUpperCase())}
-                placeholder="e.g., ABC123"
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent outline-none transition text-slate-900 uppercase"
+                placeholder="e.g., GY-ABC123"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-oazis-purple focus:border-transparent outline-none transition text-gray-900 uppercase"
                 required
               />
             </div>
@@ -77,16 +89,21 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || !confirmationCode.trim()}
-              className="w-full bg-slate-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-oazis-purple text-white py-3 px-4 rounded-lg font-medium hover:bg-oazis-purple-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Verifying...' : 'View My Reservation'}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-gray-500">
             Your confirmation code can be found in your booking confirmation email.
           </p>
         </div>
+
+        {/* Footer */}
+        <p className="mt-6 text-center text-sm text-oazis-purple">
+          oAZis Properties &bull; Tucson, AZ
+        </p>
       </div>
     </div>
   );
