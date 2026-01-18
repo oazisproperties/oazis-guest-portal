@@ -11,10 +11,15 @@ function getStripe() {
   });
 }
 
+interface CartItem {
+  upsellId: string;
+  optionId?: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { items, reservationId } = body;
+    const { items, reservationId } = body as { items: CartItem[]; reservationId?: string };
 
     if (!items || items.length === 0) {
       return NextResponse.json(
@@ -24,24 +29,37 @@ export async function POST(request: NextRequest) {
     }
 
     // Build line items for Stripe
-    const lineItems = items
-      .map((itemId: string) => {
-        const upsell = getUpsellById(itemId);
-        if (!upsell) return null;
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
-        return {
-          price_data: {
-            currency: upsell.currency.toLowerCase(),
-            product_data: {
-              name: upsell.name,
-              description: upsell.description,
-            },
-            unit_amount: Math.round(upsell.price * 100), // Stripe uses cents
+    for (const item of items) {
+      const upsell = getUpsellById(item.upsellId);
+      if (!upsell) continue;
+
+      // Find the selected option if applicable
+      let price = upsell.price;
+      let name = upsell.name;
+      const description = upsell.description;
+
+      if (item.optionId && upsell.options) {
+        const option = upsell.options.find((o) => o.id === item.optionId);
+        if (option) {
+          price = option.price;
+          name = `${upsell.name} - ${option.label}`;
+        }
+      }
+
+      lineItems.push({
+        price_data: {
+          currency: upsell.currency.toLowerCase(),
+          product_data: {
+            name,
+            description,
           },
-          quantity: 1,
-        };
-      })
-      .filter(Boolean);
+          unit_amount: Math.round(price * 100), // Stripe uses cents
+        },
+        quantity: 1,
+      });
+    }
 
     if (lineItems.length === 0) {
       return NextResponse.json(
@@ -62,7 +80,7 @@ export async function POST(request: NextRequest) {
       cancel_url: `${appUrl}/upsells`,
       metadata: {
         reservationId: reservationId || '',
-        items: items.join(','),
+        items: JSON.stringify(items),
       },
     });
 

@@ -171,15 +171,20 @@ export async function getReservationByConfirmationCode(
 export async function getReservationById(id: string): Promise<Reservation | null> {
   try {
     const res = await guestyFetch(`/reservations/${id}`);
+
+    // Use plannedArrival/plannedDeparture if set, otherwise fall back to listing defaults
+    const checkInTime = res.plannedArrival || res.listing?.defaultCheckInTime || '15:00';
+    const checkOutTime = res.plannedDeparture || res.listing?.defaultCheckOutTime || '11:00';
+
     return {
       id: res._id,
       confirmationCode: res.confirmationCode,
       guestName: res.guest?.fullName || 'Guest',
       guestEmail: res.guest?.email || '',
-      checkIn: res.checkIn,
-      checkOut: res.checkOut,
-      checkInTime: res.listing?.defaultCheckInTime || '15:00',
-      checkOutTime: res.listing?.defaultCheckOutTime || '11:00',
+      checkIn: res.checkInDateLocalized || res.checkIn,
+      checkOut: res.checkOutDateLocalized || res.checkOut,
+      checkInTime,
+      checkOutTime,
       status: res.status,
       listingId: res.listingId,
       money: {
@@ -209,6 +214,11 @@ export async function getProperty(listingId: string): Promise<Property | null> {
         f.fieldId.toLowerCase().includes('wifi') && f.fieldId.toLowerCase().includes('password')
     )?.value;
 
+    // Get cover photo from pictures array (first picture is the cover)
+    const coverPhoto = listing.pictures?.[0];
+    const thumbnail = coverPhoto?.thumbnail || listing.picture?.thumbnail || '';
+    const original = coverPhoto?.original || listing.picture?.regular || '';
+
     return {
       id: listing._id,
       nickname: listing.nickname || listing.title,
@@ -222,8 +232,8 @@ export async function getProperty(listingId: string): Promise<Property | null> {
         country: listing.address?.country || '',
       },
       picture: {
-        thumbnail: listing.picture?.thumbnail || '',
-        regular: listing.picture?.regular || '',
+        thumbnail,
+        regular: original,
       },
       wifiName: wifiName || listing.wifiNetwork || '',
       wifiPassword: wifiPassword || listing.wifiPassword || '',
@@ -248,15 +258,30 @@ export async function getPayments(reservationId: string): Promise<Payment[]> {
       currency: string;
       status: string;
       createdAt: string;
+      paidAt?: string;
+      shouldBePaidAt?: string;
       note?: string;
-    }) => ({
-      id: payment._id,
-      amount: payment.amount,
-      currency: payment.currency || 'USD',
-      status: payment.status === 'succeeded' ? 'paid' : payment.status,
-      date: payment.createdAt,
-      description: payment.note || 'Payment',
-    }));
+    }) => {
+      // Determine payment status
+      let status: 'paid' | 'pending' | 'failed' | 'scheduled' = 'pending';
+      if (payment.status === 'succeeded' || payment.paidAt) {
+        status = 'paid';
+      } else if (payment.status === 'failed') {
+        status = 'failed';
+      } else if (payment.shouldBePaidAt && !payment.paidAt) {
+        status = 'scheduled';
+      }
+
+      return {
+        id: payment._id,
+        amount: payment.amount,
+        currency: payment.currency || 'USD',
+        status,
+        date: payment.paidAt || payment.createdAt,
+        description: payment.note || 'Payment',
+        scheduledDate: payment.shouldBePaidAt,
+      };
+    });
   } catch (error) {
     console.error('Error fetching payments:', error);
     return [];

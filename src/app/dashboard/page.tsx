@@ -180,13 +180,26 @@ export default function DashboardPage() {
       )}
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Property Address Card */}
+        {/* Property Address Card with Map */}
         {property && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <h3 className="text-xl font-semibold text-oazis-purple mb-2">
               {property.nickname}
             </h3>
-            <p className="text-gray-600">{property.address.full}</p>
+            <p className="text-gray-600 mb-4">{property.address.full}</p>
+            {/* Google Maps Embed */}
+            <div className="rounded-lg overflow-hidden">
+              <iframe
+                src={`https://www.google.com/maps?q=${encodeURIComponent(property.address.full)}&output=embed`}
+                width="100%"
+                height="200"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Property Location"
+              ></iframe>
+            </div>
           </div>
         )}
 
@@ -254,6 +267,29 @@ export default function DashboardPage() {
                 {formatCurrency(reservation.money?.balanceDue || 0, reservation.money?.currency)}
               </span>
             </div>
+            {/* Next Payment Due */}
+            {(() => {
+              const scheduledPayments = payments
+                .filter((p) => p.status === 'scheduled' && p.scheduledDate)
+                .sort((a, b) => new Date(a.scheduledDate!).getTime() - new Date(b.scheduledDate!).getTime());
+              const nextPayment = scheduledPayments[0];
+              if (nextPayment) {
+                return (
+                  <div className="flex justify-between pt-3 border-t border-gray-100">
+                    <span className="text-gray-600">Next Payment Due</span>
+                    <div className="text-right">
+                      <span className="font-medium text-oazis-orange block">
+                        {formatCurrency(nextPayment.amount, nextPayment.currency)}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {formatDate(nextPayment.scheduledDate!)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
           {payments.length > 0 && (
             <Link
@@ -282,7 +318,16 @@ export default function DashboardPage() {
 
       {/* Footer */}
       <footer className="mt-12 pb-8 text-center text-sm text-gray-500">
-        oAZis Properties &bull; Tucson, AZ
+        <p className="mb-2">oAZis Properties &bull; Tucson, AZ</p>
+        <p className="space-x-4">
+          <a href="mailto:stay@oazisproperties.com" className="hover:text-oazis-purple transition">
+            stay@oazisproperties.com
+          </a>
+          <span>&bull;</span>
+          <a href="tel:+15206000434" className="hover:text-oazis-purple transition">
+            (520) 600-0434
+          </a>
+        </p>
       </footer>
     </div>
   );

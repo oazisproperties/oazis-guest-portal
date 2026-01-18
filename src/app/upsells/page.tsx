@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Upsell } from '@/types';
+import { Upsell, UpsellOption } from '@/types';
 
 const categoryLabels: Record<string, string> = {
   all: 'All Add-ons',
@@ -16,10 +16,17 @@ const categoryLabels: Record<string, string> = {
   event: 'Events',
 };
 
+// Cart item includes the selected option if applicable
+interface CartItem {
+  upsell: Upsell;
+  selectedOption?: UpsellOption;
+}
+
 export default function UpsellsPage() {
   const [upsells, setUpsells] = useState<Upsell[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [cart, setCart] = useState<Upsell[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({}); // upsellId -> optionId
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const router = useRouter();
@@ -49,17 +56,39 @@ export default function UpsellsPage() {
     }
   };
 
+  const handleOptionChange = (upsellId: string, optionId: string) => {
+    setSelectedOptions((prev) => ({ ...prev, [upsellId]: optionId }));
+  };
+
+  const getSelectedPrice = (upsell: Upsell): number => {
+    if (!upsell.options) return upsell.price;
+    const selectedOptionId = selectedOptions[upsell.id];
+    const option = upsell.options.find((o) => o.id === selectedOptionId);
+    return option?.price || upsell.options[0].price;
+  };
+
+  const getSelectedOption = (upsell: Upsell): UpsellOption | undefined => {
+    if (!upsell.options) return undefined;
+    const selectedOptionId = selectedOptions[upsell.id];
+    return upsell.options.find((o) => o.id === selectedOptionId) || upsell.options[0];
+  };
+
   const addToCart = (upsell: Upsell) => {
-    if (!cart.find((item) => item.id === upsell.id)) {
-      setCart([...cart, upsell]);
-    }
+    if (cart.find((item) => item.upsell.id === upsell.id)) return;
+
+    const selectedOption = getSelectedOption(upsell);
+    setCart([...cart, { upsell, selectedOption }]);
   };
 
   const removeFromCart = (upsellId: string) => {
-    setCart(cart.filter((item) => item.id !== upsellId));
+    setCart(cart.filter((item) => item.upsell.id !== upsellId));
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
+  const getCartItemPrice = (item: CartItem): number => {
+    return item.selectedOption?.price || item.upsell.price;
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + getCartItemPrice(item), 0);
 
   const formatCurrency = (amount: number, currency: string = 'USD') => {
     return new Intl.NumberFormat('en-US', {
@@ -76,11 +105,17 @@ export default function UpsellsPage() {
       const sessionData = localStorage.getItem('guestSession');
       const session = sessionData ? JSON.parse(sessionData) : null;
 
+      // Send cart items with option IDs for proper pricing
+      const items = cart.map((item) => ({
+        upsellId: item.upsell.id,
+        optionId: item.selectedOption?.id,
+      }));
+
       const response = await fetch('/api/upsells/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: cart.map((item) => item.id),
+          items,
           reservationId: session?.reservationId,
         }),
       });
@@ -154,7 +189,11 @@ export default function UpsellsPage() {
         {/* Upsells Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-24">
           {upsells.map((upsell) => {
-            const inCart = cart.find((item) => item.id === upsell.id);
+            const inCart = cart.find((item) => item.upsell.id === upsell.id);
+            const hasOptions = upsell.options && upsell.options.length > 0;
+            const displayPrice = getSelectedPrice(upsell);
+            const currentOptionId = selectedOptions[upsell.id] || upsell.options?.[0]?.id;
+
             return (
               <div
                 key={upsell.id}
@@ -163,10 +202,47 @@ export default function UpsellsPage() {
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="font-semibold text-gray-900">{upsell.name}</h3>
                   <span className="text-lg font-bold text-oazis-purple">
-                    {formatCurrency(upsell.price, upsell.currency)}
+                    {hasOptions ? `From ${formatCurrency(upsell.price, upsell.currency)}` : formatCurrency(upsell.price, upsell.currency)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">{upsell.description}</p>
+
+                {/* Options Selector */}
+                {hasOptions && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select an option:
+                    </label>
+                    <div className="space-y-2">
+                      {upsell.options!.map((option) => (
+                        <label
+                          key={option.id}
+                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition ${
+                            currentOptionId === option.id
+                              ? 'border-oazis-purple bg-oazis-purple/5'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name={`option-${upsell.id}`}
+                              value={option.id}
+                              checked={currentOptionId === option.id}
+                              onChange={() => handleOptionChange(upsell.id, option.id)}
+                              className="text-oazis-purple focus:ring-oazis-purple"
+                            />
+                            <span className="text-sm text-gray-900">{option.label}</span>
+                          </div>
+                          <span className="text-sm font-semibold text-oazis-purple">
+                            {formatCurrency(option.price, upsell.currency)}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={() =>
                     inCart ? removeFromCart(upsell.id) : addToCart(upsell)
@@ -177,7 +253,7 @@ export default function UpsellsPage() {
                       : 'bg-oazis-purple text-white hover:bg-oazis-purple-dark'
                   }`}
                 >
-                  {inCart ? 'Remove from Cart' : 'Add to Cart'}
+                  {inCart ? 'Remove from Cart' : `Add to Cart - ${formatCurrency(displayPrice, upsell.currency)}`}
                 </button>
               </div>
             );
@@ -187,29 +263,54 @@ export default function UpsellsPage() {
         {/* Cart Footer */}
         {cart.length > 0 && (
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
-            <div className="max-w-4xl mx-auto flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">
-                  {cart.length} item{cart.length > 1 ? 's' : ''}
-                </p>
-                <p className="text-xl font-bold text-oazis-purple">
-                  {formatCurrency(cartTotal)}
-                </p>
+            <div className="max-w-4xl mx-auto">
+              {/* Cart items summary */}
+              <div className="mb-3 space-y-1">
+                {cart.map((item) => (
+                  <div key={item.upsell.id} className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      {item.upsell.name}
+                      {item.selectedOption && (
+                        <span className="text-gray-400"> - {item.selectedOption.label}</span>
+                      )}
+                    </span>
+                    <span className="text-gray-900">{formatCurrency(getCartItemPrice(item))}</span>
+                  </div>
+                ))}
               </div>
-              <button
-                onClick={handleCheckout}
-                disabled={checkoutLoading}
-                className="bg-oazis-orange text-white px-8 py-3 rounded-lg font-medium hover:bg-oazis-orange-dark transition disabled:opacity-50"
-              >
-                {checkoutLoading ? 'Processing...' : 'Checkout'}
-              </button>
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <div>
+                  <p className="text-sm text-gray-600">
+                    {cart.length} item{cart.length > 1 ? 's' : ''}
+                  </p>
+                  <p className="text-xl font-bold text-oazis-purple">
+                    {formatCurrency(cartTotal)}
+                  </p>
+                </div>
+                <button
+                  onClick={handleCheckout}
+                  disabled={checkoutLoading}
+                  className="bg-oazis-orange text-white px-8 py-3 rounded-lg font-medium hover:bg-oazis-orange-dark transition disabled:opacity-50"
+                >
+                  {checkoutLoading ? 'Processing...' : 'Checkout'}
+                </button>
+              </div>
             </div>
           </div>
         )}
       </main>
 
       <footer className="pb-8 text-center text-sm text-gray-500">
-        oAZis Properties &bull; Tucson, AZ
+        <p className="mb-2">oAZis Properties &bull; Tucson, AZ</p>
+        <p className="space-x-4">
+          <a href="mailto:stay@oazisproperties.com" className="hover:text-oazis-purple transition">
+            stay@oazisproperties.com
+          </a>
+          <span>&bull;</span>
+          <a href="tel:+15206000434" className="hover:text-oazis-purple transition">
+            (520) 600-0434
+          </a>
+        </p>
       </footer>
     </div>
   );

@@ -46,9 +46,17 @@ export interface Payment {
   id: string;
   amount: number;
   currency: string;
-  status: 'paid' | 'pending' | 'failed';
+  status: 'paid' | 'pending' | 'failed' | 'scheduled';
   date: string;
   description: string;
+  scheduledDate?: string; // For scheduled payments - when it should be paid
+}
+
+// Upsell option for items with selectable choices
+export interface UpsellOption {
+  id: string;
+  label: string;
+  price: number;
 }
 
 // Upsell types
@@ -56,10 +64,11 @@ export interface Upsell {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price: number; // Base price or single price if no options
   currency: string;
   category: 'pool_heating' | 'early_checkin' | 'late_checkout' | 'extras' | 'service' | 'event';
   image?: string;
+  options?: UpsellOption[]; // If present, user must select one option
 }
 
 // Auth types

@@ -2,82 +2,49 @@ import { Upsell } from '@/types';
 
 // oAZis Properties upsells catalog
 export const upsellsCatalog: Upsell[] = [
-  // Pool Heating
+  // Pool Heating - consolidated with temperature options
   {
-    id: 'pool-heat-80',
-    name: 'Pool Heating - 80°F',
-    description: 'Looking for a warmer swimming experience? We\'ll heat the pool to a comfortable 80°F. Please request at least 3 days in advance.',
-    price: 100,
+    id: 'pool-heating',
+    name: 'Pool Heating',
+    description: 'Looking for a warmer swimming experience? Select your preferred temperature. Please request at least 3 days in advance.',
+    price: 100, // Starting price
     currency: 'USD',
     category: 'pool_heating',
-  },
-  {
-    id: 'pool-heat-83',
-    name: 'Pool Heating - 83°F',
-    description: 'Looking for a warmer swimming experience? We\'ll heat the pool to a toasty 83°F. Please request at least 3 days in advance.',
-    price: 125,
-    currency: 'USD',
-    category: 'pool_heating',
-  },
-  {
-    id: 'pool-heat-85',
-    name: 'Pool Heating - 85°F',
-    description: 'Looking for a warmer swimming experience? We\'ll heat the pool to a luxurious 85°F. Please request at least 3 days in advance.',
-    price: 150,
-    currency: 'USD',
-    category: 'pool_heating',
+    options: [
+      { id: 'pool-heat-80', label: '80°F - Comfortable', price: 100 },
+      { id: 'pool-heat-83', label: '83°F - Toasty', price: 125 },
+      { id: 'pool-heat-85', label: '85°F - Luxurious', price: 150 },
+    ],
   },
 
-  // Early Check-In
+  // Early Check-In - consolidated with time options
   {
-    id: 'early-checkin-2hr',
-    name: 'Early Check-In (2 hours)',
-    description: 'Request to check in 2 hours early. Note: This is a request and not guaranteed. A $50 hold will be placed and charged only if approved.',
-    price: 20,
+    id: 'early-checkin',
+    name: 'Early Check-In',
+    description: 'Request to check in early. Note: This is a request and not guaranteed. A $50 hold will be placed and charged only if approved.',
+    price: 20, // Starting price
     currency: 'USD',
     category: 'early_checkin',
-  },
-  {
-    id: 'early-checkin-4hr',
-    name: 'Early Check-In (4 hours)',
-    description: 'Request to check in 4 hours early. Note: This is a request and not guaranteed. A $50 hold will be placed and charged only if approved.',
-    price: 40,
-    currency: 'USD',
-    category: 'early_checkin',
-  },
-  {
-    id: 'early-checkin-6hr',
-    name: 'Early Check-In (6 hours)',
-    description: 'Request to check in 6 hours early. Note: This is a request and not guaranteed. A $50 hold will be placed and charged only if approved.',
-    price: 60,
-    currency: 'USD',
-    category: 'early_checkin',
+    options: [
+      { id: 'early-checkin-2hr', label: '2 hours early', price: 20 },
+      { id: 'early-checkin-4hr', label: '4 hours early', price: 40 },
+      { id: 'early-checkin-6hr', label: '6 hours early', price: 60 },
+    ],
   },
 
-  // Late Check-Out
+  // Late Check-Out - consolidated with time options
   {
-    id: 'late-checkout-2hr',
-    name: 'Late Check-Out (2 hours)',
-    description: 'Request to check out 2 hours late. Note: This is a request and not guaranteed. A $50 hold will be placed and charged only if approved.',
-    price: 20,
+    id: 'late-checkout',
+    name: 'Late Check-Out',
+    description: 'Request to check out late. Note: This is a request and not guaranteed. A $50 hold will be placed and charged only if approved.',
+    price: 20, // Starting price
     currency: 'USD',
     category: 'late_checkout',
-  },
-  {
-    id: 'late-checkout-4hr',
-    name: 'Late Check-Out (4 hours)',
-    description: 'Request to check out 4 hours late. Note: This is a request and not guaranteed. A $50 hold will be placed and charged only if approved.',
-    price: 40,
-    currency: 'USD',
-    category: 'late_checkout',
-  },
-  {
-    id: 'late-checkout-6hr',
-    name: 'Late Check-Out (6 hours)',
-    description: 'Request to check out 6 hours late. Note: This is a request and not guaranteed. A $50 hold will be placed and charged only if approved.',
-    price: 60,
-    currency: 'USD',
-    category: 'late_checkout',
+    options: [
+      { id: 'late-checkout-2hr', label: '2 hours late', price: 20 },
+      { id: 'late-checkout-4hr', label: '4 hours late', price: 40 },
+      { id: 'late-checkout-6hr', label: '6 hours late', price: 60 },
+    ],
   },
 
   // Extras
@@ -108,30 +75,19 @@ export const upsellsCatalog: Upsell[] = [
     category: 'service',
   },
 
-  // Events
+  // Events - consolidated with size options
   {
-    id: 'event-small',
-    name: 'Event - Small (10-19 guests)',
-    description: 'Hosting a pool party, birthday, wedding, or family reunion? This covers a small gathering of 10-19 guests. We\'ll help make your event smooth and stress-free.',
-    price: 500,
+    id: 'event',
+    name: 'Event Package',
+    description: 'Hosting a pool party, birthday, wedding, or family reunion? Select the package that fits your gathering size. We\'ll help make your event smooth and stress-free.',
+    price: 500, // Starting price
     currency: 'USD',
     category: 'event',
-  },
-  {
-    id: 'event-medium',
-    name: 'Event - Medium (20-29 guests)',
-    description: 'Hosting a pool party, birthday, wedding, or family reunion? This covers a medium gathering of 20-29 guests. We\'ll help make your event smooth and stress-free.',
-    price: 1000,
-    currency: 'USD',
-    category: 'event',
-  },
-  {
-    id: 'event-large',
-    name: 'Event - Large (30-40 guests)',
-    description: 'Hosting a pool party, birthday, wedding, or family reunion? This covers a larger gathering of 30-40 guests. We\'ll help make your event smooth and stress-free.',
-    price: 1500,
-    currency: 'USD',
-    category: 'event',
+    options: [
+      { id: 'event-small', label: 'Small (10-19 guests)', price: 500 },
+      { id: 'event-medium', label: 'Medium (20-29 guests)', price: 1000 },
+      { id: 'event-large', label: 'Large (30-40 guests)', price: 1500 },
+    ],
   },
 ];
 
@@ -144,4 +100,15 @@ export function getUpsellsByCategory(category?: string): Upsell[] {
 
 export function getUpsellById(id: string): Upsell | undefined {
   return upsellsCatalog.find((u) => u.id === id);
+}
+
+// Get specific option from an upsell
+export function getUpsellOption(upsellId: string, optionId: string): { upsell: Upsell; option: { id: string; label: string; price: number } } | undefined {
+  const upsell = upsellsCatalog.find((u) => u.id === upsellId);
+  if (!upsell) return undefined;
+
+  const option = upsell.options?.find((o) => o.id === optionId);
+  if (!option) return undefined;
+
+  return { upsell, option };
 }
