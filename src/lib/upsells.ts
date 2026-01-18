@@ -3,9 +3,9 @@ import { Upsell } from '@/types';
 // Property IDs from Guesty - update these with your actual property IDs
 // You can find these in Guesty under each listing's details
 export const PROPERTY_IDS = {
-  CANYON_VIEW: '', // Add Canyon View oAZis listing ID
-  DIAMOND: '', // Add Diamond oAZis listing ID
-  PANORAMA: '', // Add Panorama oAZis listing ID
+  CANYON_VIEW: '6785494b014ea9001281beaf', // Add Canyon View oAZis listing ID
+  DIAMOND: '6785495562c49b00274e069e', // Add Diamond oAZis listing ID
+  PANORAMA: '678549253b25590029d63a71', // Add Panorama oAZis listing ID
   DEMO: 'demo-property-001', // Demo property for testing
 };
 
