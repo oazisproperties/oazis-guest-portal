@@ -136,14 +136,14 @@ export default function UpsellsPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-oazis-cream-light">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-oazis-purple"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-oazis-teal"></div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-oazis-cream-light">
-      <header className="bg-oazis-purple text-white sticky top-0 z-10">
+      <header className="bg-oazis-teal text-white sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-oazis-cream hover:text-white transition">
@@ -177,7 +177,7 @@ export default function UpsellsPage() {
               onClick={() => setSelectedCategory(key)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
                 selectedCategory === key
-                  ? 'bg-oazis-purple text-white'
+                  ? 'bg-oazis-teal text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
               }`}
             >
@@ -201,7 +201,7 @@ export default function UpsellsPage() {
               >
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="font-semibold text-gray-900">{upsell.name}</h3>
-                  <span className="text-lg font-bold text-oazis-purple">
+                  <span className="text-lg font-bold text-oazis-teal-heading">
                     {hasOptions ? `From ${formatCurrency(upsell.price, upsell.currency)}` : formatCurrency(upsell.price, upsell.currency)}
                   </span>
                 </div>
@@ -219,7 +219,7 @@ export default function UpsellsPage() {
                           key={option.id}
                           className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition ${
                             currentOptionId === option.id
-                              ? 'border-oazis-purple bg-oazis-purple/5'
+                              ? 'border-oazis-teal bg-oazis-teal/10'
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
@@ -230,11 +230,11 @@ export default function UpsellsPage() {
                               value={option.id}
                               checked={currentOptionId === option.id}
                               onChange={() => handleOptionChange(upsell.id, option.id)}
-                              className="text-oazis-purple focus:ring-oazis-purple"
+                              className="text-oazis-teal-heading focus:ring-oazis-purple"
                             />
                             <span className="text-sm text-gray-900">{option.label}</span>
                           </div>
-                          <span className="text-sm font-semibold text-oazis-purple">
+                          <span className="text-sm font-semibold text-oazis-teal-heading">
                             {formatCurrency(option.price, upsell.currency)}
                           </span>
                         </label>
@@ -250,7 +250,7 @@ export default function UpsellsPage() {
                   className={`w-full py-2 px-4 rounded-lg font-medium transition ${
                     inCart
                       ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      : 'bg-oazis-purple text-white hover:bg-oazis-purple-dark'
+                      : 'bg-oazis-teal text-white hover:bg-oazis-teal-dark'
                   }`}
                 >
                   {inCart ? 'Remove from Cart' : `Add to Cart - ${formatCurrency(displayPrice, upsell.currency)}`}
@@ -283,7 +283,7 @@ export default function UpsellsPage() {
                   <p className="text-sm text-gray-600">
                     {cart.length} item{cart.length > 1 ? 's' : ''}
                   </p>
-                  <p className="text-xl font-bold text-oazis-purple">
+                  <p className="text-xl font-bold text-oazis-teal-heading">
                     {formatCurrency(cartTotal)}
                   </p>
                 </div>
@@ -303,11 +303,11 @@ export default function UpsellsPage() {
       <footer className="pb-8 text-center text-sm text-gray-500">
         <p className="mb-2">oAZis Properties &bull; Tucson, AZ</p>
         <p className="space-x-4">
-          <a href="mailto:stay@oazisproperties.com" className="hover:text-oazis-purple transition">
+          <a href="mailto:stay@oazisproperties.com" className="hover:text-oazis-teal-heading transition">
             stay@oazisproperties.com
           </a>
           <span>&bull;</span>
-          <a href="tel:+15206000434" className="hover:text-oazis-purple transition">
+          <a href="tel:+15206000434" className="hover:text-oazis-teal-heading transition">
             (520) 600-0434
           </a>
         </p>

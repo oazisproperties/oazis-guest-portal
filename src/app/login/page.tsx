@@ -75,7 +75,7 @@ export default function LoginPage() {
                 value={confirmationCode}
                 onChange={(e) => setConfirmationCode(e.target.value.toUpperCase())}
                 placeholder="e.g., GY-ABC123"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-oazis-purple focus:border-transparent outline-none transition text-gray-900 uppercase"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-oazis-teal focus:border-transparent outline-none transition text-gray-900 uppercase"
                 required
               />
             </div>
@@ -89,7 +89,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || !confirmationCode.trim()}
-              className="w-full bg-oazis-purple text-white py-3 px-4 rounded-lg font-medium hover:bg-oazis-purple-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-oazis-teal text-white py-3 px-4 rounded-lg font-medium hover:bg-oazis-teal-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Verifying...' : 'View My Reservation'}
             </button>

@@ -149,7 +149,7 @@ export default function DashboardPage() {
 
       {/* Fallback header if no cover photo */}
       {!property?.picture?.regular && (
-        <header className="bg-oazis-purple text-white">
+        <header className="bg-oazis-teal text-white">
           <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Image
@@ -163,7 +163,7 @@ export default function DashboardPage() {
             </div>
             <button
               onClick={handleLogout}
-              className="text-sm text-oazis-cream hover:text-white transition"
+              className="text-sm text-white/80 hover:text-white transition"
             >
               Log out
             </button>
@@ -172,7 +172,7 @@ export default function DashboardPage() {
             <h2 className="text-3xl font-bold">
               Welcome to {property?.nickname || 'Your Stay'}, {guestFirstName}
             </h2>
-            <p className="text-oazis-cream mt-2">
+            <p className="text-white/80 mt-2">
               Confirmation: <span className="font-mono">{reservation.confirmationCode}</span>
             </p>
           </div>
@@ -302,14 +302,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Upsells CTA */}
-        <div className="bg-gradient-to-r from-oazis-purple to-oazis-purple-dark rounded-xl p-6 text-white">
+        <div className="bg-oazis-teal rounded-xl p-6 text-white">
           <h3 className="font-semibold text-lg mb-2">Enhance Your Stay</h3>
-          <p className="text-oazis-cream mb-4">
-            Add early check-in, late checkout, or explore local experiences.
+          <p className="text-white/90 mb-4">
+            Add early check-in, late checkout, pool heating, and more.
           </p>
           <Link
             href="/upsells"
-            className="inline-block bg-oazis-orange text-white px-6 py-2 rounded-lg font-medium hover:bg-oazis-orange-dark transition"
+            className="inline-block bg-white text-oazis-purple px-6 py-2 rounded-lg font-medium hover:bg-oazis-cream transition"
           >
             Browse Add-ons
           </Link>

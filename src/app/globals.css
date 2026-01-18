@@ -1,18 +1,27 @@
 @import "tailwindcss";
 
+/* Import Playfair Display for headings to match website */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1A1A1A;
 
-  /* oAZis Brand Colors */
-  --oazis-purple: #5D4777;
-  --oazis-purple-dark: #4A3860;
+  /* oAZis Brand Colors - matched to website */
+  --oazis-teal: #5FB8AD;
+  --oazis-teal-dark: #4A9E94;
+  --oazis-teal-heading: #2B7A78;
+  --oazis-cream: #F5F1EB;
+  --oazis-cream-light: #FAF8F5;
   --oazis-orange: #D4874D;
   --oazis-orange-dark: #C17A42;
-  --oazis-teal: #4DBABA;
-  --oazis-teal-dark: #3FA3A3;
-  --oazis-cream: #E8DCC4;
-  --oazis-cream-light: #F5F0E6;
+
+  /* Legacy purple - keeping for accents */
+  --oazis-purple: #2B7A78;
+  --oazis-purple-dark: #236462;
+
+  /* Fonts */
+  --font-heading: 'Playfair Display', Georgia, serif;
 }
 
 @theme inline {
@@ -24,6 +33,7 @@
   --color-oazis-orange-dark: var(--oazis-orange-dark);
   --color-oazis-teal: var(--oazis-teal);
   --color-oazis-teal-dark: var(--oazis-teal-dark);
+  --color-oazis-teal-heading: var(--oazis-teal-heading);
   --color-oazis-cream: var(--oazis-cream);
   --color-oazis-cream-light: var(--oazis-cream-light);
   --font-sans: var(--font-geist-sans);
@@ -36,18 +46,29 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Heading font class */
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+}
+
 /* Custom utility classes for brand colors */
 .bg-oazis-purple { background-color: var(--oazis-purple); }
 .bg-oazis-purple-dark { background-color: var(--oazis-purple-dark); }
 .bg-oazis-orange { background-color: var(--oazis-orange); }
 .bg-oazis-orange-dark { background-color: var(--oazis-orange-dark); }
 .bg-oazis-teal { background-color: var(--oazis-teal); }
+.bg-oazis-teal-dark { background-color: var(--oazis-teal-dark); }
 .bg-oazis-cream { background-color: var(--oazis-cream); }
 .bg-oazis-cream-light { background-color: var(--oazis-cream-light); }
 
 .text-oazis-purple { color: var(--oazis-purple); }
 .text-oazis-orange { color: var(--oazis-orange); }
 .text-oazis-teal { color: var(--oazis-teal); }
+.text-oazis-teal-heading { color: var(--oazis-teal-heading); }
 .text-oazis-cream { color: var(--oazis-cream); }
 
 .border-oazis-purple { border-color: var(--oazis-purple); }
