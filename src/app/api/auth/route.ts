@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getReservationByConfirmationCode } from '@/lib/guesty';
+import { isDemoCode, demoReservation } from '@/lib/demo-data';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +12,18 @@ export async function POST(request: NextRequest) {
         { error: 'Confirmation code is required' },
         { status: 400 }
       );
+    }
+
+    // Check for demo mode
+    if (isDemoCode(confirmationCode)) {
+      const session = {
+        reservationId: demoReservation.id,
+        confirmationCode: demoReservation.confirmationCode,
+        guestName: demoReservation.guestName,
+        listingId: demoReservation.listingId,
+        isDemo: true,
+      };
+      return NextResponse.json({ session, reservation: demoReservation });
     }
 
     const reservation = await getReservationByConfirmationCode(confirmationCode);

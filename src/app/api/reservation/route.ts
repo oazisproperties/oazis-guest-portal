@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getReservationById, getProperty, getPayments } from '@/lib/guesty';
+import { demoReservation, demoPayments } from '@/lib/demo-data';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +12,14 @@ export async function GET(request: NextRequest) {
         { error: 'Reservation ID is required' },
         { status: 400 }
       );
+    }
+
+    // Check for demo mode
+    if (reservationId.startsWith('demo-')) {
+      return NextResponse.json({
+        reservation: demoReservation,
+        payments: demoPayments,
+      });
     }
 
     const reservation = await getReservationById(reservationId);
