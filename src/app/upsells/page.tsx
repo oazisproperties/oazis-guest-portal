@@ -29,6 +29,7 @@ export default function UpsellsPage() {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({}); // upsellId -> optionId
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [propertyId, setPropertyId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -37,16 +38,24 @@ export default function UpsellsPage() {
       router.push('/login');
       return;
     }
-    fetchUpsells();
+    const session = JSON.parse(sessionData);
+    setPropertyId(session.listingId || null);
+    fetchUpsells('all', session.listingId);
   }, [router]);
 
   useEffect(() => {
-    fetchUpsells(selectedCategory);
-  }, [selectedCategory]);
+    if (propertyId !== null) {
+      fetchUpsells(selectedCategory, propertyId);
+    }
+  }, [selectedCategory, propertyId]);
 
-  const fetchUpsells = async (category: string = 'all') => {
+  const fetchUpsells = async (category: string = 'all', propId?: string | null) => {
     try {
-      const response = await fetch(`/api/upsells?category=${category}`);
+      let url = `/api/upsells?category=${category}`;
+      if (propId) {
+        url += `&propertyId=${propId}`;
+      }
+      const response = await fetch(url);
       const data = await response.json();
       setUpsells(data.upsells || []);
     } catch (err) {

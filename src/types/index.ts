@@ -69,6 +69,7 @@ export interface Upsell {
   category: 'pool_heating' | 'early_checkin' | 'late_checkout' | 'extras' | 'service' | 'event';
   image?: string;
   options?: UpsellOption[]; // If present, user must select one option
+  propertyIds?: string[]; // If set, only show for these properties. If not set, show for all.
 }
 
 // Auth types

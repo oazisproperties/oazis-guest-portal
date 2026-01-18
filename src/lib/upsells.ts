@@ -1,8 +1,24 @@
 import { Upsell } from '@/types';
 
+// Property IDs from Guesty - update these with your actual property IDs
+// You can find these in Guesty under each listing's details
+export const PROPERTY_IDS = {
+  CANYON_VIEW: '', // Add Canyon View oAZis listing ID
+  DIAMOND: '', // Add Diamond oAZis listing ID
+  PANORAMA: '', // Add Panorama oAZis listing ID
+  DEMO: 'demo-property-001', // Demo property for testing
+};
+
+// Helper to get properties with pools (update as needed)
+const PROPERTIES_WITH_POOLS = [
+  PROPERTY_IDS.DIAMOND,
+  PROPERTY_IDS.PANORAMA,
+  PROPERTY_IDS.DEMO,
+].filter(Boolean); // Remove empty strings
+
 // oAZis Properties upsells catalog
 export const upsellsCatalog: Upsell[] = [
-  // Pool Heating - consolidated with temperature options
+  // Pool Heating - only for properties with pools
   {
     id: 'pool-heating',
     name: 'Pool Heating',
@@ -10,6 +26,7 @@ export const upsellsCatalog: Upsell[] = [
     price: 100, // Starting price
     currency: 'USD',
     category: 'pool_heating',
+    propertyIds: PROPERTIES_WITH_POOLS.length > 0 ? PROPERTIES_WITH_POOLS : undefined,
     options: [
       { id: 'pool-heat-80', label: '80°F - Comfortable', price: 100 },
       { id: 'pool-heat-83', label: '83°F - Toasty', price: 125 },
@@ -91,11 +108,27 @@ export const upsellsCatalog: Upsell[] = [
   },
 ];
 
-export function getUpsellsByCategory(category?: string): Upsell[] {
-  if (!category || category === 'all') {
-    return upsellsCatalog;
+export function getUpsellsByCategory(category?: string, propertyId?: string): Upsell[] {
+  let upsells = upsellsCatalog;
+
+  // Filter by property if propertyId is provided
+  if (propertyId) {
+    upsells = upsells.filter((u) => {
+      // If no propertyIds specified, available for all properties
+      if (!u.propertyIds || u.propertyIds.length === 0) {
+        return true;
+      }
+      // Otherwise, check if this property is in the list
+      return u.propertyIds.includes(propertyId);
+    });
   }
-  return upsellsCatalog.filter((u) => u.category === category);
+
+  // Filter by category
+  if (category && category !== 'all') {
+    upsells = upsells.filter((u) => u.category === category);
+  }
+
+  return upsells;
 }
 
 export function getUpsellById(id: string): Upsell | undefined {
