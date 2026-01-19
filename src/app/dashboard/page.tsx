@@ -9,6 +9,7 @@ import { Reservation, Payment } from '@/types';
 export default function DashboardPage() {
   const [reservation, setReservation] = useState<Reservation | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [houseManualUrl, setHouseManualUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function DashboardPage() {
 
       setReservation(data.reservation);
       setPayments(data.payments);
+      setHouseManualUrl(data.houseManualUrl || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load reservation');
     } finally {
@@ -48,7 +50,13 @@ export default function DashboardPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // Parse date string as local time to avoid timezone shift
+    // Input format: "2026-01-20" or "2026-01-20T00:00:00.000Z"
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -247,6 +255,31 @@ export default function DashboardPage() {
                   {property.wifiPassword}
                 </p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* House Manual */}
+        {houseManualUrl && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-oazis-purple">House Manual</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Everything you need to know about your stay
+                </p>
+              </div>
+              <a
+                href={houseManualUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-oazis-teal text-white px-6 py-2 rounded-lg font-medium hover:bg-oazis-teal-dark transition flex items-center gap-2"
+              >
+                <span>View Guide</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
             </div>
           </div>
         )}

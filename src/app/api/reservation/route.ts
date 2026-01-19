@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getReservationById, getProperty, getPayments } from '@/lib/guesty';
 import { demoReservation, demoPayments } from '@/lib/demo-data';
+import { getHouseManualUrl } from '@/lib/upsells';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,9 +17,11 @@ export async function GET(request: NextRequest) {
 
     // Check for demo mode
     if (reservationId.startsWith('demo-')) {
+      const houseManualUrl = getHouseManualUrl(demoReservation.listingId);
       return NextResponse.json({
         reservation: demoReservation,
         payments: demoPayments,
+        houseManualUrl,
       });
     }
 
@@ -37,12 +40,16 @@ export async function GET(request: NextRequest) {
     // Fetch payments
     const payments = await getPayments(reservationId);
 
+    // Get house manual URL for this property
+    const houseManualUrl = getHouseManualUrl(reservation.listingId);
+
     return NextResponse.json({
       reservation: {
         ...reservation,
         listing: property,
       },
       payments,
+      houseManualUrl,
     });
   } catch (error) {
     console.error('Error fetching reservation:', error);

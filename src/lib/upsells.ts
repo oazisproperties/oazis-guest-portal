@@ -3,11 +3,25 @@ import { Upsell } from '@/types';
 // Property IDs from Guesty - update these with your actual property IDs
 // You can find these in Guesty under each listing's details
 export const PROPERTY_IDS = {
-  CANYON_VIEW: '6785494b014ea9001281beaf', // Add Canyon View oAZis listing ID
-  DIAMOND: '6785495562c49b00274e069e', // Add Diamond oAZis listing ID
-  PANORAMA: '678549253b25590029d63a71', // Add Panorama oAZis listing ID
-  DEMO: 'demo-property-001', // Demo property for testing
+  CANYON_VIEW: '6785494b014ea9001281beaf',
+  DIAMOND: '6785495562c49b00274e069e',
+  PANORAMA: '678549253b25590029d63a71',
+  DEMO: 'demo-property-001',
 };
+
+// House manual URLs for each property
+// Update these with links to your digital guidebooks (Hostfully, Touch Stay, etc.)
+export const HOUSE_MANUAL_URLS: Record<string, string> = {
+  [PROPERTY_IDS.CANYON_VIEW]: '', // Add Canyon View house manual URL
+  [PROPERTY_IDS.DIAMOND]: '', // Add Diamond house manual URL
+  [PROPERTY_IDS.PANORAMA]: '', // Add Panorama house manual URL
+  [PROPERTY_IDS.DEMO]: 'https://example.com/demo-house-manual', // Demo manual
+};
+
+// Helper function to get house manual URL for a property
+export function getHouseManualUrl(propertyId: string): string | undefined {
+  return HOUSE_MANUAL_URLS[propertyId] || undefined;
+}
 
 // Helper to get properties with pools (update as needed)
 const PROPERTIES_WITH_POOLS = [

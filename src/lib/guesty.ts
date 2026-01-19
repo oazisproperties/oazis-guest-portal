@@ -136,26 +136,41 @@ export async function getReservationByConfirmationCode(
   confirmationCode: string
 ): Promise<Reservation | null> {
   try {
-    // Use $in operator with array as per Guesty API docs
-    const filters = JSON.stringify([
+    // Try multiple search strategies for confirmation code
+    // Strategy 1: Exact match with $in operator
+    let filters = JSON.stringify([
       { operator: '$in', field: 'confirmationCode', value: [confirmationCode] }
     ]);
 
-    const data = await guestyFetch('/reservations', { filters });
+    let data = await guestyFetch('/reservations', { filters });
+    console.log('Guesty search (confirmationCode):', data.results?.length || 0, 'found');
 
-    console.log('Guesty reservation search results:', data.results?.length || 0, 'found');
+    // Strategy 2: If not found, try searching by guestyConfirmationCode (for manual reservations)
+    if (!data.results || data.results.length === 0) {
+      filters = JSON.stringify([
+        { operator: '$in', field: 'guestyConfirmationCode', value: [confirmationCode] }
+      ]);
+      data = await guestyFetch('/reservations', { filters });
+      console.log('Guesty search (guestyConfirmationCode):', data.results?.length || 0, 'found');
+    }
+
+    // Strategy 3: If still not found, try text search
+    if (!data.results || data.results.length === 0) {
+      data = await guestyFetch('/reservations', { q: confirmationCode });
+      console.log('Guesty search (text search):', data.results?.length || 0, 'found');
+    }
 
     if (data.results && data.results.length > 0) {
       const res = data.results[0];
       return {
         id: res._id,
-        confirmationCode: res.confirmationCode,
+        confirmationCode: res.confirmationCode || res.guestyConfirmationCode,
         guestName: res.guest?.fullName || 'Guest',
         guestEmail: res.guest?.email || '',
-        checkIn: res.checkIn,
-        checkOut: res.checkOut,
-        checkInTime: res.listing?.defaultCheckInTime || '15:00',
-        checkOutTime: res.listing?.defaultCheckOutTime || '11:00',
+        checkIn: res.checkInDateLocalized || res.checkIn,
+        checkOut: res.checkOutDateLocalized || res.checkOut,
+        checkInTime: res.plannedArrival || res.listing?.defaultCheckInTime || '15:00',
+        checkOutTime: res.plannedDeparture || res.listing?.defaultCheckOutTime || '11:00',
         status: res.status,
         listingId: res.listingId,
         money: {
@@ -207,16 +222,43 @@ export async function getProperty(listingId: string): Promise<Property | null> {
   try {
     const listing = await guestyFetch(`/listings/${listingId}`);
 
-    // Get custom fields for WiFi info
-    const wifiName = listing.customFields?.find(
-      (f: { fieldId: string; value: string }) =>
-        f.fieldId.toLowerCase().includes('wifi') && f.fieldId.toLowerCase().includes('name')
-    )?.value;
+    // Log available custom fields for debugging
+    if (listing.customFields && listing.customFields.length > 0) {
+      console.log('Available custom fields:', listing.customFields.map((f: { fieldId: string }) => f.fieldId));
+    }
 
-    const wifiPassword = listing.customFields?.find(
-      (f: { fieldId: string; value: string }) =>
-        f.fieldId.toLowerCase().includes('wifi') && f.fieldId.toLowerCase().includes('password')
-    )?.value;
+    // Get custom fields for WiFi info - try multiple field name patterns
+    const wifiNameField = listing.customFields?.find(
+      (f: { fieldId: string; value: string }) => {
+        const fieldId = f.fieldId.toLowerCase();
+        return (
+          (fieldId.includes('wifi') && (fieldId.includes('name') || fieldId.includes('network') || fieldId.includes('ssid'))) ||
+          fieldId === 'wifi_name' ||
+          fieldId === 'wifiname' ||
+          fieldId === 'wifi_network' ||
+          fieldId === 'wifi_ssid'
+        );
+      }
+    );
+
+    const wifiPasswordField = listing.customFields?.find(
+      (f: { fieldId: string; value: string }) => {
+        const fieldId = f.fieldId.toLowerCase();
+        return (
+          (fieldId.includes('wifi') && (fieldId.includes('password') || fieldId.includes('pass') || fieldId.includes('key'))) ||
+          fieldId === 'wifi_password' ||
+          fieldId === 'wifipassword' ||
+          fieldId === 'wifi_pass'
+        );
+      }
+    );
+
+    const wifiName = wifiNameField?.value;
+    const wifiPassword = wifiPasswordField?.value;
+
+    // Log what we found
+    console.log('WiFi from customFields - Name:', wifiName || 'not found', 'Password:', wifiPassword ? '[set]' : 'not found');
+    console.log('WiFi from listing fields - wifiNetwork:', listing.wifiNetwork || 'not found', 'wifiPassword:', listing.wifiPassword ? '[set]' : 'not found');
 
     // Get cover photo from pictures array (first picture is the cover)
     const coverPhoto = listing.pictures?.[0];
