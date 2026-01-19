@@ -195,55 +195,55 @@ export async function updateReservationPortalCode(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const token = await getAccessToken();
+    const errors: string[] = [];
 
-    // Try using the custom-fields endpoint directly
-    const url = `${GUESTY_API_URL}/reservations/${reservationId}/custom-fields`;
-    console.log('Guesty API POST custom-fields:', url);
-
-    const response = await fetch(url, {
-      method: 'POST',
+    // Approach 1: Try PUT with simple key-value object format
+    console.log('Approach 1: PUT with key-value format...');
+    let response = await fetch(`${GUESTY_API_URL}/reservations/${reservationId}`, {
+      method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        fieldId: 'portal_code',
-        value: portalCode,
+        customFields: {
+          portal_code: portalCode,
+        },
       }),
     });
 
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      console.error('Guesty custom-fields POST error:', response.status, responseText);
-
-      // If that didn't work, try PUT with different format
-      console.log('Trying PUT with key-value format...');
-      const putResponse = await fetch(`${GUESTY_API_URL}/reservations/${reservationId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          customFields: {
-            portal_code: portalCode,
-          },
-        }),
-      });
-
-      const putResponseText = await putResponse.text();
-
-      if (!putResponse.ok) {
-        console.error('Guesty PUT error:', putResponse.status, putResponseText);
-        return { success: false, error: `API error: ${response.status} - ${responseText}` };
-      }
+    let responseText = await response.text();
+    if (response.ok) {
+      console.log(`Approach 1 succeeded! Updated reservation ${reservationId} with portal_code: ${portalCode}`);
+      return { success: true };
     }
+    errors.push(`Approach 1 (PUT key-value): ${response.status} - ${responseText}`);
+    console.error('Approach 1 failed:', response.status, responseText);
 
-    console.log(`Updated reservation ${reservationId} with portal_code: ${portalCode}`);
-    return { success: true };
+    // Approach 2: Try with notes field (some Guesty versions use this)
+    console.log('Approach 2: PUT with notes format...');
+    response = await fetch(`${GUESTY_API_URL}/reservations/${reservationId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        note: `portal_code:${portalCode}`,
+      }),
+    });
+
+    responseText = await response.text();
+    if (response.ok) {
+      console.log(`Approach 2 succeeded! Updated reservation ${reservationId}`);
+      return { success: true };
+    }
+    errors.push(`Approach 2 (PUT notes): ${response.status} - ${responseText}`);
+    console.error('Approach 2 failed:', response.status, responseText);
+
+    return { success: false, error: errors.join(' | ') };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error updating reservation portal code:', errorMessage);
