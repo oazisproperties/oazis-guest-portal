@@ -285,8 +285,22 @@ export async function generateUniquePortalCode(): Promise<string> {
 export async function getReservationByConfirmationCode(
   confirmationCode: string
 ): Promise<Reservation | null> {
+  // Import here to avoid circular dependency
+  const { getReservationIdByPortalCode } = await import('./portal-codes');
+
   try {
-    // Try multiple search strategies for confirmation code
+    // Strategy 0: Check Redis for portal codes (6-letter codes)
+    // Portal codes are 6 uppercase letters
+    const isLikelyPortalCode = /^[A-Z]{6}$/i.test(confirmationCode.trim());
+    if (isLikelyPortalCode) {
+      const reservationId = await getReservationIdByPortalCode(confirmationCode);
+      if (reservationId) {
+        console.log('Found reservation via Redis portal code:', reservationId);
+        return await getReservationById(reservationId);
+      }
+      console.log('Portal code not found in Redis, trying other strategies...');
+    }
+
     // Strategy 1: Exact match with $in operator
     let filters = JSON.stringify([
       { operator: '$in', field: 'confirmationCode', value: [confirmationCode] }
@@ -304,16 +318,7 @@ export async function getReservationByConfirmationCode(
       console.log('Guesty search (guestyConfirmationCode):', data.results?.length || 0, 'found');
     }
 
-    // Strategy 3: If not found, try searching by portal_code custom field
-    if (!data.results || data.results.length === 0) {
-      filters = JSON.stringify([
-        { operator: '$eq', field: 'customFields.portal_code', value: confirmationCode.toUpperCase() }
-      ]);
-      data = await guestyFetch('/reservations', { filters });
-      console.log('Guesty search (portal_code):', data.results?.length || 0, 'found');
-    }
-
-    // Strategy 4: If still not found, try text search but verify the match
+    // Strategy 3: If still not found, try text search but verify the match
     if (!data.results || data.results.length === 0) {
       data = await guestyFetch('/reservations', { q: confirmationCode });
       console.log('Guesty search (text search):', data.results?.length || 0, 'found');

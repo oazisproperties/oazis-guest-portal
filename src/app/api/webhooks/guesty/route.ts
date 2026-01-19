@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   generateUniquePortalCode,
-  updateReservationPortalCode,
-} from '@/lib/guesty';
+  storePortalCode,
+  reservationHasPortalCode,
+} from '@/lib/portal-codes';
 
 // Webhook secret for verification (set this in your environment variables)
 const WEBHOOK_SECRET = process.env.GUESTY_WEBHOOK_SECRET;
@@ -39,13 +40,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No reservation ID' }, { status: 400 });
     }
 
-    // Check if portal_code already exists
-    const existingPortalCode = reservation.customFields?.portal_code;
-    if (existingPortalCode) {
-      console.log(`Reservation ${reservationId} already has portal_code: ${existingPortalCode}`);
+    // Check if portal code already exists in Redis
+    const hasCode = await reservationHasPortalCode(reservationId);
+    if (hasCode) {
+      console.log(`Reservation ${reservationId} already has a portal code`);
       return NextResponse.json({
         message: 'Portal code already exists',
-        portalCode: existingPortalCode,
+        reservationId,
       });
     }
 
@@ -53,20 +54,20 @@ export async function POST(request: NextRequest) {
     const portalCode = await generateUniquePortalCode();
     console.log(`Generated portal code ${portalCode} for reservation ${reservationId}`);
 
-    // Update the reservation with the portal code
-    const result = await updateReservationPortalCode(reservationId, portalCode);
+    // Store the portal code in Redis
+    const result = await storePortalCode(reservationId, portalCode);
 
     if (result.success) {
-      console.log(`Successfully set portal_code ${portalCode} for reservation ${reservationId}`);
+      console.log(`Successfully stored portal_code ${portalCode} for reservation ${reservationId}`);
       return NextResponse.json({
         message: 'Portal code created',
         reservationId,
         portalCode,
       });
     } else {
-      console.error(`Failed to update reservation ${reservationId}:`, result.error);
+      console.error(`Failed to store portal code for ${reservationId}:`, result.error);
       return NextResponse.json(
-        { error: 'Failed to update reservation', details: result.error, reservationId },
+        { error: 'Failed to store portal code', details: result.error, reservationId },
         { status: 500 }
       );
     }
