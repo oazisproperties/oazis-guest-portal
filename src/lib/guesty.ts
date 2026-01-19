@@ -154,10 +154,21 @@ export async function getReservationByConfirmationCode(
       console.log('Guesty search (guestyConfirmationCode):', data.results?.length || 0, 'found');
     }
 
-    // Strategy 3: If still not found, try text search
+    // Strategy 3: If still not found, try text search but verify the match
     if (!data.results || data.results.length === 0) {
       data = await guestyFetch('/reservations', { q: confirmationCode });
       console.log('Guesty search (text search):', data.results?.length || 0, 'found');
+
+      // Filter text search results to only include actual confirmation code matches
+      if (data.results && data.results.length > 0) {
+        const normalizedInput = confirmationCode.toUpperCase().trim();
+        data.results = data.results.filter((res: { confirmationCode?: string; guestyConfirmationCode?: string }) => {
+          const code1 = (res.confirmationCode || '').toUpperCase().trim();
+          const code2 = (res.guestyConfirmationCode || '').toUpperCase().trim();
+          return code1 === normalizedInput || code2 === normalizedInput;
+        });
+        console.log('Guesty search (text search after filter):', data.results.length, 'matched');
+      }
     }
 
     if (data.results && data.results.length > 0) {
