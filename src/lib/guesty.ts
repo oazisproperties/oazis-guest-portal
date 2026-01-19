@@ -132,6 +132,91 @@ async function guestyFetch(endpoint: string, params?: Record<string, string>) {
   return response.json();
 }
 
+async function guestyPut(endpoint: string, body: Record<string, unknown>) {
+  const token = await getAccessToken();
+  const url = `${GUESTY_API_URL}${endpoint}`;
+
+  console.log('Guesty API PUT:', url);
+
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Guesty API PUT error:', response.status, errorText);
+    throw new Error(`Guesty API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Generate a random 6-letter uppercase code
+export function generatePortalCode(): string {
+  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Excluding I and O to avoid confusion
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  return code;
+}
+
+// Update a reservation's custom field (portal_code)
+export async function updateReservationPortalCode(
+  reservationId: string,
+  portalCode: string
+): Promise<boolean> {
+  try {
+    await guestyPut(`/reservations/${reservationId}`, {
+      customFields: {
+        portal_code: portalCode,
+      },
+    });
+    console.log(`Updated reservation ${reservationId} with portal_code: ${portalCode}`);
+    return true;
+  } catch (error) {
+    console.error('Error updating reservation portal code:', error);
+    return false;
+  }
+}
+
+// Check if a portal code already exists
+export async function portalCodeExists(code: string): Promise<boolean> {
+  try {
+    const filters = JSON.stringify([
+      { operator: '$eq', field: 'customFields.portal_code', value: code }
+    ]);
+    const data = await guestyFetch('/reservations', { filters });
+    return data.results && data.results.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+// Generate a unique portal code (checks for duplicates)
+export async function generateUniquePortalCode(): Promise<string> {
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  while (attempts < maxAttempts) {
+    const code = generatePortalCode();
+    const exists = await portalCodeExists(code);
+    if (!exists) {
+      return code;
+    }
+    attempts++;
+  }
+
+  // Fallback: add timestamp suffix if we can't find unique code
+  return generatePortalCode() + Date.now().toString(36).slice(-2).toUpperCase();
+}
+
 export async function getReservationByConfirmationCode(
   confirmationCode: string
 ): Promise<Reservation | null> {
@@ -154,7 +239,16 @@ export async function getReservationByConfirmationCode(
       console.log('Guesty search (guestyConfirmationCode):', data.results?.length || 0, 'found');
     }
 
-    // Strategy 3: If still not found, try text search but verify the match
+    // Strategy 3: If not found, try searching by portal_code custom field
+    if (!data.results || data.results.length === 0) {
+      filters = JSON.stringify([
+        { operator: '$eq', field: 'customFields.portal_code', value: confirmationCode.toUpperCase() }
+      ]);
+      data = await guestyFetch('/reservations', { filters });
+      console.log('Guesty search (portal_code):', data.results?.length || 0, 'found');
+    }
+
+    // Strategy 4: If still not found, try text search but verify the match
     if (!data.results || data.results.length === 0) {
       data = await guestyFetch('/reservations', { q: confirmationCode });
       console.log('Guesty search (text search):', data.results?.length || 0, 'found');
