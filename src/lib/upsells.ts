@@ -12,10 +12,10 @@ export const PROPERTY_IDS = {
 // House manual URLs for each property
 // Update these with links to your digital guidebooks (Hostfully, Touch Stay, etc.)
 export const HOUSE_MANUAL_URLS: Record<string, string> = {
-  [PROPERTY_IDS.CANYON_VIEW]: '', // Add Canyon View house manual URL
-  [PROPERTY_IDS.DIAMOND]: '', // Add Diamond house manual URL
-  [PROPERTY_IDS.PANORAMA]: '', // Add Panorama house manual URL
-  [PROPERTY_IDS.DEMO]: 'https://example.com/demo-house-manual', // Demo manual
+  [PROPERTY_IDS.CANYON_VIEW]: 'https://www.oazisproperties.com/canyon-view-manual',
+  [PROPERTY_IDS.DIAMOND]: 'https://www.oazisproperties.com/diamond-manual',
+  [PROPERTY_IDS.PANORAMA]: 'https://oazisproperties.com/panorama-manual',
+  [PROPERTY_IDS.DEMO]: 'https://example.com/demo-house-manual',
 };
 
 // Helper function to get house manual URL for a property
