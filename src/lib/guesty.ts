@@ -132,14 +132,14 @@ async function guestyFetch(endpoint: string, params?: Record<string, string>) {
   return response.json();
 }
 
-async function guestyPatch(endpoint: string, body: Record<string, unknown>) {
+async function guestyPut(endpoint: string, body: Record<string, unknown>) {
   const token = await getAccessToken();
   const url = `${GUESTY_API_URL}${endpoint}`;
 
-  console.log('Guesty API PATCH:', url, JSON.stringify(body));
+  console.log('Guesty API PUT:', url, JSON.stringify(body));
 
   const response = await fetch(url, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Accept': 'application/json',
@@ -151,7 +151,7 @@ async function guestyPatch(endpoint: string, body: Record<string, unknown>) {
   const responseText = await response.text();
 
   if (!response.ok) {
-    console.error('Guesty API PATCH error:', response.status, responseText);
+    console.error('Guesty API PUT error:', response.status, responseText);
     throw new Error(`Guesty API error: ${response.status} - ${responseText}`);
   }
 
@@ -175,7 +175,7 @@ export async function updateReservationPortalCode(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Guesty expects customFields as an array of {fieldId, value} objects
-    await guestyPatch(`/reservations/${reservationId}`, {
+    await guestyPut(`/reservations/${reservationId}`, {
       customFields: [
         {
           fieldId: 'portal_code',
