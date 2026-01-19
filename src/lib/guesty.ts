@@ -173,10 +173,14 @@ export async function updateReservationPortalCode(
   portalCode: string
 ): Promise<boolean> {
   try {
+    // Guesty expects customFields as an array of {fieldId, value} objects
     await guestyPut(`/reservations/${reservationId}`, {
-      customFields: {
-        portal_code: portalCode,
-      },
+      customFields: [
+        {
+          fieldId: 'portal_code',
+          value: portalCode,
+        },
+      ],
     });
     console.log(`Updated reservation ${reservationId} with portal_code: ${portalCode}`);
     return true;
