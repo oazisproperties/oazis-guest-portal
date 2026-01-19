@@ -188,34 +188,60 @@ export function generatePortalCode(): string {
   return code;
 }
 
-// Cache the portal_code field ID to avoid repeated lookups
-let cachedPortalCodeFieldId: string | null = null;
-
 // Update a reservation's custom field (portal_code)
 export async function updateReservationPortalCode(
   reservationId: string,
   portalCode: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Get the MongoDB ID for the portal_code custom field
-    if (!cachedPortalCodeFieldId) {
-      cachedPortalCodeFieldId = await getCustomFieldId('portal_code');
-      if (!cachedPortalCodeFieldId) {
-        return { success: false, error: 'Custom field "portal_code" not found in Guesty' };
+    const token = await getAccessToken();
+
+    // Try using the custom-fields endpoint directly
+    const url = `${GUESTY_API_URL}/reservations/${reservationId}/custom-fields`;
+    console.log('Guesty API POST custom-fields:', url);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        fieldId: 'portal_code',
+        value: portalCode,
+      }),
+    });
+
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      console.error('Guesty custom-fields POST error:', response.status, responseText);
+
+      // If that didn't work, try PUT with different format
+      console.log('Trying PUT with key-value format...');
+      const putResponse = await fetch(`${GUESTY_API_URL}/reservations/${reservationId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customFields: {
+            portal_code: portalCode,
+          },
+        }),
+      });
+
+      const putResponseText = await putResponse.text();
+
+      if (!putResponse.ok) {
+        console.error('Guesty PUT error:', putResponse.status, putResponseText);
+        return { success: false, error: `API error: ${response.status} - ${responseText}` };
       }
-      console.log('Found portal_code field ID:', cachedPortalCodeFieldId);
     }
 
-    // Guesty expects customFields as an array of {fieldId, value} objects
-    // fieldId must be the MongoDB ObjectId, not the field name
-    await guestyPut(`/reservations/${reservationId}`, {
-      customFields: [
-        {
-          fieldId: cachedPortalCodeFieldId,
-          value: portalCode,
-        },
-      ],
-    });
     console.log(`Updated reservation ${reservationId} with portal_code: ${portalCode}`);
     return { success: true };
   } catch (error) {
