@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
     console.log(`Generated portal code ${portalCode} for reservation ${reservationId}`);
 
     // Update the reservation with the portal code
-    const success = await updateReservationPortalCode(reservationId, portalCode);
+    const result = await updateReservationPortalCode(reservationId, portalCode);
 
-    if (success) {
+    if (result.success) {
       console.log(`Successfully set portal_code ${portalCode} for reservation ${reservationId}`);
       return NextResponse.json({
         message: 'Portal code created',
@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
         portalCode,
       });
     } else {
-      console.error(`Failed to update reservation ${reservationId}`);
+      console.error(`Failed to update reservation ${reservationId}:`, result.error);
       return NextResponse.json(
-        { error: 'Failed to update reservation' },
+        { error: 'Failed to update reservation', details: result.error, reservationId },
         { status: 500 }
       );
     }

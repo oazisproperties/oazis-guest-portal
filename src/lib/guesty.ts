@@ -132,14 +132,14 @@ async function guestyFetch(endpoint: string, params?: Record<string, string>) {
   return response.json();
 }
 
-async function guestyPut(endpoint: string, body: Record<string, unknown>) {
+async function guestyPatch(endpoint: string, body: Record<string, unknown>) {
   const token = await getAccessToken();
   const url = `${GUESTY_API_URL}${endpoint}`;
 
-  console.log('Guesty API PUT:', url);
+  console.log('Guesty API PATCH:', url, JSON.stringify(body));
 
   const response = await fetch(url, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Accept': 'application/json',
@@ -148,13 +148,14 @@ async function guestyPut(endpoint: string, body: Record<string, unknown>) {
     body: JSON.stringify(body),
   });
 
+  const responseText = await response.text();
+
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Guesty API PUT error:', response.status, errorText);
-    throw new Error(`Guesty API error: ${response.status} ${response.statusText}`);
+    console.error('Guesty API PATCH error:', response.status, responseText);
+    throw new Error(`Guesty API error: ${response.status} - ${responseText}`);
   }
 
-  return response.json();
+  return responseText ? JSON.parse(responseText) : {};
 }
 
 // Generate a random 6-letter uppercase code
@@ -171,10 +172,10 @@ export function generatePortalCode(): string {
 export async function updateReservationPortalCode(
   reservationId: string,
   portalCode: string
-): Promise<boolean> {
+): Promise<{ success: boolean; error?: string }> {
   try {
     // Guesty expects customFields as an array of {fieldId, value} objects
-    await guestyPut(`/reservations/${reservationId}`, {
+    await guestyPatch(`/reservations/${reservationId}`, {
       customFields: [
         {
           fieldId: 'portal_code',
@@ -183,10 +184,11 @@ export async function updateReservationPortalCode(
       ],
     });
     console.log(`Updated reservation ${reservationId} with portal_code: ${portalCode}`);
-    return true;
+    return { success: true };
   } catch (error) {
-    console.error('Error updating reservation portal code:', error);
-    return false;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error updating reservation portal code:', errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
