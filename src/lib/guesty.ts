@@ -158,6 +158,26 @@ async function guestyPut(endpoint: string, body: Record<string, unknown>) {
   return responseText ? JSON.parse(responseText) : {};
 }
 
+// Get custom field definitions from Guesty
+export async function getCustomFields(): Promise<Array<{ _id: string; fieldId: string; title: string }>> {
+  try {
+    const data = await guestyFetch('/custom-fields', { entity: 'reservation' });
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching custom fields:', error);
+    return [];
+  }
+}
+
+// Get the MongoDB ID for a custom field by its fieldId/name
+export async function getCustomFieldId(fieldName: string): Promise<string | null> {
+  const fields = await getCustomFields();
+  const field = fields.find(
+    (f) => f.fieldId === fieldName || f.title?.toLowerCase() === fieldName.toLowerCase()
+  );
+  return field?._id || null;
+}
+
 // Generate a random 6-letter uppercase code
 export function generatePortalCode(): string {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Excluding I and O to avoid confusion
@@ -168,17 +188,30 @@ export function generatePortalCode(): string {
   return code;
 }
 
+// Cache the portal_code field ID to avoid repeated lookups
+let cachedPortalCodeFieldId: string | null = null;
+
 // Update a reservation's custom field (portal_code)
 export async function updateReservationPortalCode(
   reservationId: string,
   portalCode: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Get the MongoDB ID for the portal_code custom field
+    if (!cachedPortalCodeFieldId) {
+      cachedPortalCodeFieldId = await getCustomFieldId('portal_code');
+      if (!cachedPortalCodeFieldId) {
+        return { success: false, error: 'Custom field "portal_code" not found in Guesty' };
+      }
+      console.log('Found portal_code field ID:', cachedPortalCodeFieldId);
+    }
+
     // Guesty expects customFields as an array of {fieldId, value} objects
+    // fieldId must be the MongoDB ObjectId, not the field name
     await guestyPut(`/reservations/${reservationId}`, {
       customFields: [
         {
-          fieldId: 'portal_code',
+          fieldId: cachedPortalCodeFieldId,
           value: portalCode,
         },
       ],
