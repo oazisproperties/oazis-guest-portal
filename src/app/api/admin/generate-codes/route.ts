@@ -43,7 +43,7 @@ async function getFutureReservations() {
   ]);
 
   const response = await fetch(
-    `${GUESTY_API_URL}/reservations?filters=${encodeURIComponent(filters)}&limit=100&fields=_id,confirmationCode,guestyConfirmationCode,guest.fullName,checkInDateLocalized,checkOutDateLocalized,listing.nickname,status`,
+    `${GUESTY_API_URL}/reservations?filters=${encodeURIComponent(filters)}&limit=100`,
     {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -96,10 +96,10 @@ export async function GET(request: NextRequest) {
       results.push({
         reservationId,
         confirmationCode: res.confirmationCode || res.guestyConfirmationCode || '',
-        guestName: res.guest?.fullName || 'Guest',
-        checkIn: res.checkInDateLocalized || '',
-        checkOut: res.checkOutDateLocalized || '',
-        property: res.listing?.nickname || '',
+        guestName: res.guest?.fullName || res.guestName || 'Guest',
+        checkIn: res.checkInDateLocalized || res.checkIn || '',
+        checkOut: res.checkOutDateLocalized || res.checkOut || '',
+        property: res.listing?.nickname || res.listing?.title || res.listingTitle || '',
         status: res.status || '',
         portalCode,
         isNew,
