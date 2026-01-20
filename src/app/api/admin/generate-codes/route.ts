@@ -37,9 +37,10 @@ async function getFutureReservations() {
   const token = await getToken();
   const today = new Date().toISOString().split('T')[0];
 
-  // Get reservations with check-in date >= today
+  // Get confirmed reservations with check-in date >= today
   const filters = JSON.stringify([
-    { operator: '$gte', field: 'checkInDateLocalized', value: today }
+    { operator: '$gte', field: 'checkInDateLocalized', value: today },
+    { operator: '$eq', field: 'status', value: 'confirmed' }
   ]);
 
   const response = await fetch(
@@ -106,21 +107,24 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Filter out reservations without confirmation codes
+    const filteredResults = results.filter(r => r.confirmationCode && r.confirmationCode.trim() !== '');
+
     // Sort by check-in date
-    results.sort((a, b) => a.checkIn.localeCompare(b.checkIn));
+    filteredResults.sort((a, b) => a.checkIn.localeCompare(b.checkIn));
 
     // Generate CSV format for easy pasting
-    const csvHeader = 'Guest Name\tConfirmation Code\tPortal Code\tCheck-In\tCheck-Out\tProperty\tStatus';
-    const csvRows = results.map(r =>
-      `${r.guestName}\t${r.confirmationCode}\t${r.portalCode}\t${r.checkIn}\t${r.checkOut}\t${r.property}\t${r.status}`
+    const csvHeader = 'Guest Name\tConfirmation Code\tPortal Code\tCheck-In\tCheck-Out\tProperty';
+    const csvRows = filteredResults.map(r =>
+      `${r.guestName}\t${r.confirmationCode}\t${r.portalCode}\t${r.checkIn.split('T')[0]}\t${r.checkOut.split('T')[0]}\t${r.property}`
     );
     const csv = [csvHeader, ...csvRows].join('\n');
 
     return NextResponse.json({
-      message: `Generated portal codes for ${results.filter(r => r.isNew).length} new reservations (${results.length} total future reservations)`,
-      count: results.length,
-      newCodes: results.filter(r => r.isNew).length,
-      results,
+      message: `Generated portal codes for ${filteredResults.filter(r => r.isNew).length} new reservations (${filteredResults.length} total confirmed future reservations with confirmation codes)`,
+      count: filteredResults.length,
+      newCodes: filteredResults.filter(r => r.isNew).length,
+      results: filteredResults,
       csv,
     });
   } catch (error) {
