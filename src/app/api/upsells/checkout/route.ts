@@ -70,12 +70,15 @@ export async function POST(request: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    // Create Stripe Checkout Session
+    // Create Stripe Checkout Session with authorization only (no capture)
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
+      payment_intent_data: {
+        capture_method: 'manual', // Authorize only, do not charge
+      },
       success_url: `${appUrl}/upsells/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/upsells`,
       metadata: {
