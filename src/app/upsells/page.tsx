@@ -38,9 +38,14 @@ export default function UpsellsPage() {
       router.push('/login');
       return;
     }
-    const session = JSON.parse(sessionData);
-    setPropertyId(session.listingId || null);
-    fetchUpsells('all', session.listingId);
+    try {
+      const session = JSON.parse(sessionData);
+      setPropertyId(session.listingId || null);
+      fetchUpsells('all', session.listingId);
+    } catch {
+      localStorage.removeItem('guestSession');
+      router.push('/login');
+    }
   }, [router]);
 
   useEffect(() => {
@@ -112,7 +117,14 @@ export default function UpsellsPage() {
     setCheckoutLoading(true);
     try {
       const sessionData = localStorage.getItem('guestSession');
-      const session = sessionData ? JSON.parse(sessionData) : null;
+      let session = null;
+      if (sessionData) {
+        try {
+          session = JSON.parse(sessionData);
+        } catch {
+          // Invalid session data, continue without it
+        }
+      }
 
       // Send cart items with option IDs for proper pricing
       const items = cart.map((item) => ({

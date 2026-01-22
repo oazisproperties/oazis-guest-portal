@@ -50,10 +50,13 @@ export async function POST(request: NextRequest) {
 
     try {
       const reservationId = session.metadata.reservationId || 'Unknown';
-      const cartItems = JSON.parse(session.metadata.items) as Array<{
-        upsellId: string;
-        optionId?: string;
-      }>;
+      let cartItems: Array<{ upsellId: string; optionId?: string }>;
+      try {
+        cartItems = JSON.parse(session.metadata.items);
+      } catch (parseError) {
+        console.error('Failed to parse cart items metadata:', parseError);
+        return NextResponse.json({ received: true, error: 'Invalid metadata format' });
+      }
 
       // Build the items list with names and prices
       const items = cartItems.map(item => {

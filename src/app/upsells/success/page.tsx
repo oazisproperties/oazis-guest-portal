@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 
-export default function UpsellSuccessPage() {
+function UpsellSuccessContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -25,11 +25,19 @@ export default function UpsellSuccessPage() {
           // Restore the correct reservation in localStorage
           const sessionData = localStorage.getItem('guestSession');
           if (sessionData) {
-            const session = JSON.parse(sessionData);
-            if (session.reservationId !== data.reservationId) {
-              // Update to the correct reservation
-              session.reservationId = data.reservationId;
-              localStorage.setItem('guestSession', JSON.stringify(session));
+            try {
+              const session = JSON.parse(sessionData);
+              if (session.reservationId !== data.reservationId) {
+                // Update to the correct reservation
+                session.reservationId = data.reservationId;
+                localStorage.setItem('guestSession', JSON.stringify(session));
+              }
+            } catch {
+              // Invalid session data, create a new one
+              localStorage.setItem(
+                'guestSession',
+                JSON.stringify({ reservationId: data.reservationId })
+              );
             }
           } else {
             // No session exists, create one with the reservation ID
@@ -100,5 +108,17 @@ export default function UpsellSuccessPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function UpsellSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-oazis-cream-light">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-oazis-purple"></div>
+      </div>
+    }>
+      <UpsellSuccessContent />
+    </Suspense>
   );
 }

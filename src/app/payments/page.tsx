@@ -9,6 +9,7 @@ import { Payment } from '@/types';
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -18,17 +19,26 @@ export default function PaymentsPage() {
       return;
     }
 
-    const session = JSON.parse(sessionData);
-    fetchPayments(session.reservationId);
+    try {
+      const session = JSON.parse(sessionData);
+      fetchPayments(session.reservationId);
+    } catch {
+      localStorage.removeItem('guestSession');
+      router.push('/login');
+    }
   }, [router]);
 
   const fetchPayments = async (reservationId: string) => {
     try {
       const response = await fetch(`/api/reservation?id=${reservationId}`);
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load payments');
+      }
       setPayments(data.payments || []);
     } catch (err) {
       console.error('Failed to fetch payments:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load payments');
     } finally {
       setLoading(false);
     }
@@ -78,7 +88,14 @@ export default function PaymentsPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {payments.length === 0 ? (
+        {error ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Link href="/dashboard" className="text-oazis-purple hover:underline">
+              Return to dashboard
+            </Link>
+          </div>
+        ) : payments.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
             <p className="text-gray-600">No payments recorded yet.</p>
           </div>

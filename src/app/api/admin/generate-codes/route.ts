@@ -10,6 +10,21 @@ const GUESTY_API_URL = 'https://open-api.guesty.com/v1';
 // Simple admin secret check
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
 
+interface GuestyReservation {
+  _id: string;
+  confirmationCode?: string;
+  guestyConfirmationCode?: string;
+  guest?: { fullName?: string };
+  guestName?: string;
+  checkInDateLocalized?: string;
+  checkIn?: string;
+  checkOutDateLocalized?: string;
+  checkOut?: string;
+  listing?: { nickname?: string; title?: string };
+  listingTitle?: string;
+  status?: string;
+}
+
 async function getToken() {
   if (process.env.GUESTY_ACCESS_TOKEN) {
     return process.env.GUESTY_ACCESS_TOKEN;
@@ -29,7 +44,7 @@ async function getToken() {
     }),
   });
 
-  const data = await response.json();
+  const data = await response.json() as { access_token: string };
   return data.access_token;
 }
 
@@ -53,7 +68,7 @@ async function getFutureReservations() {
     }
   );
 
-  const data = await response.json();
+  const data = await response.json() as { results?: GuestyReservation[] };
   return data.results || [];
 }
 

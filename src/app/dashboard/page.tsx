@@ -21,8 +21,13 @@ export default function DashboardPage() {
       return;
     }
 
-    const session = JSON.parse(sessionData);
-    fetchReservationData(session.reservationId);
+    try {
+      const session = JSON.parse(sessionData);
+      fetchReservationData(session.reservationId);
+    } catch {
+      localStorage.removeItem('guestSession');
+      router.push('/login');
+    }
   }, [router]);
 
   const fetchReservationData = async (reservationId: string) => {
@@ -303,8 +308,8 @@ export default function DashboardPage() {
             {/* Next Payment Due */}
             {(() => {
               const scheduledPayments = payments
-                .filter((p) => p.status === 'scheduled' && p.scheduledDate)
-                .sort((a, b) => new Date(a.scheduledDate!).getTime() - new Date(b.scheduledDate!).getTime());
+                .filter((p): p is Payment & { scheduledDate: string } => p.status === 'scheduled' && !!p.scheduledDate)
+                .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
               const nextPayment = scheduledPayments[0];
               if (nextPayment) {
                 return (
@@ -315,7 +320,7 @@ export default function DashboardPage() {
                         {formatCurrency(nextPayment.amount, nextPayment.currency)}
                       </span>
                       <span className="text-sm text-gray-500">
-                        {formatDate(nextPayment.scheduledDate!)}
+                        {formatDate(nextPayment.scheduledDate)}
                       </span>
                     </div>
                   </div>
