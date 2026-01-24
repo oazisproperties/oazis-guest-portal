@@ -3,6 +3,7 @@ import { Redis } from '@upstash/redis';
 
 const GUESTY_API_URL = 'https://open-api.guesty.com/v1';
 const TOKEN_CACHE_KEY = 'guesty_access_token';
+const PORTAL_CODE_FIELD_ID = '696db156c6cd55001401cdf1'; // MongoDB ObjectId for portal_code custom field
 
 // In-memory fallback for local development
 let localCachedToken: string | null = null;
@@ -188,67 +189,60 @@ export function generatePortalCode(): string {
   return code;
 }
 
-// Update a reservation's custom field (portal_code)
-export async function updateReservationPortalCode(
+// Sync portal code to Guesty using the custom fields API
+export async function syncPortalCodeToGuesty(
   reservationId: string,
   portalCode: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const token = await getAccessToken();
-    const errors: string[] = [];
+    const code = portalCode.toUpperCase();
 
-    // Approach 1: Try PUT with simple key-value object format
-    console.log('Approach 1: PUT with key-value format...');
-    let response = await fetch(`${GUESTY_API_URL}/reservations/${reservationId}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        customFields: {
-          portal_code: portalCode,
+    console.log(`Syncing portal code ${code} to Guesty reservation ${reservationId} (field ID: ${PORTAL_CODE_FIELD_ID})`);
+
+    // Use the dedicated custom fields endpoint
+    const response = await fetch(
+      `${GUESTY_API_URL}/reservations/${reservationId}/custom-fields`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          customFields: [
+            {
+              fieldId: PORTAL_CODE_FIELD_ID,
+              value: code,
+            },
+          ],
+        }),
+      }
+    );
 
-    let responseText = await response.text();
+    const responseText = await response.text();
+
     if (response.ok) {
-      console.log(`Approach 1 succeeded! Updated reservation ${reservationId} with portal_code: ${portalCode}`);
+      console.log(`Successfully synced portal_code ${code} to Guesty reservation ${reservationId}`);
       return { success: true };
     }
-    errors.push(`Approach 1 (PUT key-value): ${response.status} - ${responseText}`);
-    console.error('Approach 1 failed:', response.status, responseText);
 
-    // Approach 2: Try with notes field (some Guesty versions use this)
-    console.log('Approach 2: PUT with notes format...');
-    response = await fetch(`${GUESTY_API_URL}/reservations/${reservationId}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        note: `portal_code:${portalCode}`,
-      }),
-    });
-
-    responseText = await response.text();
-    if (response.ok) {
-      console.log(`Approach 2 succeeded! Updated reservation ${reservationId}`);
-      return { success: true };
-    }
-    errors.push(`Approach 2 (PUT notes): ${response.status} - ${responseText}`);
-    console.error('Approach 2 failed:', response.status, responseText);
-
-    return { success: false, error: errors.join(' | ') };
+    console.error('Failed to sync portal code to Guesty:', response.status, responseText);
+    return { success: false, error: `Guesty API error: ${response.status} - ${responseText}` };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error updating reservation portal code:', errorMessage);
+    console.error('Error syncing portal code to Guesty:', errorMessage);
     return { success: false, error: errorMessage };
   }
+}
+
+// Legacy function - kept for backwards compatibility
+export async function updateReservationPortalCode(
+  reservationId: string,
+  portalCode: string
+): Promise<{ success: boolean; error?: string }> {
+  return syncPortalCodeToGuesty(reservationId, portalCode);
 }
 
 // Check if a portal code already exists

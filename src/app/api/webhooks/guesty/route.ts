@@ -3,7 +3,9 @@ import {
   generateUniquePortalCode,
   storePortalCode,
   reservationHasPortalCode,
+  getPortalCodeByReservationId,
 } from '@/lib/portal-codes';
+import { syncPortalCodeToGuesty } from '@/lib/guesty';
 
 // Webhook secret for verification (set this in your environment variables)
 const WEBHOOK_SECRET = process.env.GUESTY_WEBHOOK_SECRET;
@@ -42,34 +44,51 @@ export async function POST(request: NextRequest) {
 
     // Check if portal code already exists in Redis
     const hasCode = await reservationHasPortalCode(reservationId);
+    let portalCode: string;
+
     if (hasCode) {
-      console.log(`Reservation ${reservationId} already has a portal code`);
-      return NextResponse.json({
-        message: 'Portal code already exists',
-        reservationId,
-      });
+      // Get existing code and ensure it's synced to Guesty
+      portalCode = (await getPortalCodeByReservationId(reservationId)) || '';
+      console.log(`Reservation ${reservationId} already has portal code ${portalCode}, ensuring Guesty sync`);
+    } else {
+      // Generate a unique portal code
+      portalCode = await generateUniquePortalCode();
+      console.log(`Generated portal code ${portalCode} for reservation ${reservationId}`);
+
+      // Store the portal code in Redis
+      const result = await storePortalCode(reservationId, portalCode);
+
+      if (!result.success) {
+        console.error(`Failed to store portal code for ${reservationId}:`, result.error);
+        return NextResponse.json(
+          { error: 'Failed to store portal code', details: result.error, reservationId },
+          { status: 500 }
+        );
+      }
+      console.log(`Successfully stored portal_code ${portalCode} in Redis for reservation ${reservationId}`);
     }
 
-    // Generate a unique portal code
-    const portalCode = await generateUniquePortalCode();
-    console.log(`Generated portal code ${portalCode} for reservation ${reservationId}`);
+    // Sync portal code to Guesty custom fields
+    const guestyResult = await syncPortalCodeToGuesty(reservationId, portalCode);
 
-    // Store the portal code in Redis
-    const result = await storePortalCode(reservationId, portalCode);
-
-    if (result.success) {
-      console.log(`Successfully stored portal_code ${portalCode} for reservation ${reservationId}`);
+    if (guestyResult.success) {
+      console.log(`Successfully synced portal_code ${portalCode} to Guesty for reservation ${reservationId}`);
       return NextResponse.json({
-        message: 'Portal code created',
+        message: hasCode ? 'Portal code synced to Guesty' : 'Portal code created and synced',
         reservationId,
         portalCode,
+        guestySynced: true,
       });
     } else {
-      console.error(`Failed to store portal code for ${reservationId}:`, result.error);
-      return NextResponse.json(
-        { error: 'Failed to store portal code', details: result.error, reservationId },
-        { status: 500 }
-      );
+      // Code is stored in Redis but Guesty sync failed - still return success but note the issue
+      console.warn(`Portal code stored in Redis but Guesty sync failed: ${guestyResult.error}`);
+      return NextResponse.json({
+        message: hasCode ? 'Portal code exists (Guesty sync failed)' : 'Portal code created (Guesty sync failed)',
+        reservationId,
+        portalCode,
+        guestySynced: false,
+        guestyError: guestyResult.error,
+      });
     }
   } catch (error) {
     console.error('Webhook error:', error);
