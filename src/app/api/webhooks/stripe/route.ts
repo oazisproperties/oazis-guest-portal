@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { sendUpsellNotifications } from '@/lib/notifications';
+import {
+  sendUpsellNotifications,
+  sendGuestUpsellConfirmation,
+  sendGuestChargeApprovedEmail,
+} from '@/lib/notifications';
 import { getUpsellById } from '@/lib/upsells';
-import { getReservationById, getProperty } from '@/lib/guesty';
+import { getReservationById, getProperty, addUpsellsToReservationNotes } from '@/lib/guesty';
+import {
+  storeUpsellRequest,
+  findUpsellRequestByPaymentIntent,
+  updateUpsellRequestStatus,
+  UpsellRequest,
+} from '@/lib/upsell-requests';
 
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -106,24 +116,112 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      const paymentIntentId = typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : session.payment_intent?.id || 'Unknown';
+      const customerEmail = session.customer_details?.email || undefined;
+
+      // Send notifications to admin (email + Slack)
       await sendUpsellNotifications({
         reservationId,
         items,
         totalAmount,
         currency,
-        customerEmail: session.customer_details?.email || undefined,
-        paymentIntentId: typeof session.payment_intent === 'string'
-          ? session.payment_intent
-          : session.payment_intent?.id || 'Unknown',
+        customerEmail,
+        paymentIntentId,
         guestName,
         propertyName,
         checkInDate,
       });
 
+      // Store upsell request in Redis
+      const upsellRequest: UpsellRequest = {
+        id: paymentIntentId,
+        reservationId,
+        items: cartItems.map((item, index) => ({
+          ...item,
+          name: items[index].name,
+          price: items[index].price,
+          currency: items[index].currency,
+        })),
+        totalAmount,
+        currency,
+        paymentIntentId,
+        customerEmail,
+        guestName,
+        propertyName,
+        checkInDate,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+      await storeUpsellRequest(upsellRequest);
+      console.log(`Stored upsell request ${paymentIntentId} in Redis`);
+
+      // Add upsells to Guesty reservation notes
+      if (reservationId && reservationId !== 'Unknown') {
+        await addUpsellsToReservationNotes(reservationId, items, totalAmount, paymentIntentId);
+        console.log(`Added upsells to Guesty notes for reservation ${reservationId}`);
+      }
+
+      // Send confirmation email to guest
+      if (customerEmail && guestName && propertyName && checkInDate) {
+        await sendGuestUpsellConfirmation({
+          guestEmail: customerEmail,
+          guestName,
+          propertyName,
+          checkInDate,
+          items,
+          totalAmount,
+        });
+        console.log(`Sent confirmation email to guest ${customerEmail}`);
+      }
+
       console.log(`Notifications sent for reservation ${reservationId}`);
     } catch (error) {
       console.error('Error processing checkout session:', error);
       // Still return 200 to acknowledge receipt
+    }
+  }
+
+  // Handle charge captured (payment approved)
+  if (event.type === 'charge.captured') {
+    const charge = event.data.object as Stripe.Charge;
+    const paymentIntentId = typeof charge.payment_intent === 'string'
+      ? charge.payment_intent
+      : charge.payment_intent?.id;
+
+    if (!paymentIntentId) {
+      console.log('Charge captured without payment intent, ignoring');
+      return NextResponse.json({ received: true });
+    }
+
+    try {
+      // Find the upsell request by payment intent
+      const upsellRequest = await findUpsellRequestByPaymentIntent(paymentIntentId);
+
+      if (!upsellRequest) {
+        console.log(`No upsell request found for payment intent ${paymentIntentId}`);
+        return NextResponse.json({ received: true });
+      }
+
+      // Update status to approved
+      await updateUpsellRequestStatus(upsellRequest.id, 'approved', new Date().toISOString());
+      console.log(`Updated upsell request ${upsellRequest.id} to approved`);
+
+      // Send confirmation email to guest
+      if (upsellRequest.customerEmail && upsellRequest.guestName && upsellRequest.propertyName && upsellRequest.checkInDate) {
+        await sendGuestChargeApprovedEmail({
+          guestEmail: upsellRequest.customerEmail,
+          guestName: upsellRequest.guestName,
+          propertyName: upsellRequest.propertyName,
+          checkInDate: upsellRequest.checkInDate,
+          items: upsellRequest.items,
+          totalAmount: upsellRequest.totalAmount,
+        });
+        console.log(`Sent charge approved email to guest ${upsellRequest.customerEmail}`);
+      }
+    } catch (error) {
+      console.error('Error processing charge captured:', error);
     }
   }
 

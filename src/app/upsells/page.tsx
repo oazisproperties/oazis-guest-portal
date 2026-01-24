@@ -17,6 +17,19 @@ interface CartItem {
   selectedOption?: UpsellOption;
 }
 
+// Existing upsell request from the backend
+interface UpsellRequest {
+  id: string;
+  items: Array<{
+    name: string;
+    price: number;
+    currency: string;
+  }>;
+  totalAmount: number;
+  status: 'pending' | 'approved' | 'declined' | 'expired';
+  createdAt: string;
+}
+
 export default function UpsellsPage() {
   const [upsells, setUpsells] = useState<Upsell[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('add_ons');
@@ -25,6 +38,8 @@ export default function UpsellsPage() {
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [propertyId, setPropertyId] = useState<string | null>(null);
+  const [existingRequests, setExistingRequests] = useState<UpsellRequest[]>([]);
+  const [reservationId, setReservationId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -36,12 +51,26 @@ export default function UpsellsPage() {
     try {
       const session = JSON.parse(sessionData);
       setPropertyId(session.listingId || null);
+      setReservationId(session.reservationId || null);
       fetchUpsells('add_ons', session.listingId);
+      if (session.reservationId) {
+        fetchExistingRequests(session.reservationId);
+      }
     } catch {
       localStorage.removeItem('guestSession');
       router.push('/login');
     }
   }, [router]);
+
+  const fetchExistingRequests = async (resId: string) => {
+    try {
+      const response = await fetch(`/api/upsells/requests?reservationId=${resId}`);
+      const data = await response.json();
+      setExistingRequests(data.upsells || []);
+    } catch (err) {
+      console.error('Failed to fetch existing requests:', err);
+    }
+  };
 
   useEffect(() => {
     if (propertyId !== null) {
@@ -185,6 +214,62 @@ export default function UpsellsPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
+        {/* Existing Requests */}
+        {existingRequests.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Requests</h2>
+            <div className="space-y-3">
+              {existingRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span
+                      className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        request.status === 'approved'
+                          ? 'bg-green-100 text-green-800'
+                          : request.status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : request.status === 'declined'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {request.status === 'approved'
+                        ? '✓ Approved'
+                        : request.status === 'pending'
+                        ? '⏳ Pending Approval'
+                        : request.status === 'declined'
+                        ? '✗ Declined'
+                        : 'Expired'}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(request.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {request.items.map((item, idx) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="text-gray-700">{item.name}</span>
+                        <span className="text-gray-900 font-medium">
+                          {formatCurrency(item.price, item.currency)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between">
+                    <span className="text-sm font-medium text-gray-700">Total</span>
+                    <span className="text-sm font-bold text-oazis-teal-heading">
+                      {formatCurrency(request.totalAmount)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Category Filters */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {Object.entries(categoryLabels).map(([key, label]) => (

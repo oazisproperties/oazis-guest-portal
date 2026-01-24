@@ -502,3 +502,67 @@ export async function getPayments(reservationId: string): Promise<Payment[]> {
     return [];
   }
 }
+
+// Add upsell requests to reservation notes
+export async function addUpsellsToReservationNotes(
+  reservationId: string,
+  items: Array<{ name: string; price: number; currency: string }>,
+  totalAmount: number,
+  paymentIntentId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const token = await getAccessToken();
+    const timestamp = new Date().toLocaleString('en-US', {
+      timeZone: 'America/Phoenix',
+      dateStyle: 'short',
+      timeStyle: 'short'
+    });
+
+    const itemsList = items.map(item => `• ${item.name}: $${item.price.toFixed(2)}`).join('\n');
+
+    const noteText = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛒 UPSELL REQUEST - ${timestamp}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${itemsList}
+
+Total: $${totalAmount.toFixed(2)} (AUTHORIZED - NOT CAPTURED)
+Payment ID: ${paymentIntentId}
+Status: PENDING APPROVAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`.trim();
+
+    // First, get the current notes
+    const reservation = await guestyFetch(`/reservations/${reservationId}`);
+    const currentNotes = reservation.note || '';
+
+    // Append the new upsell note
+    const updatedNotes = currentNotes
+      ? `${currentNotes}\n\n${noteText}`
+      : noteText;
+
+    // Update the reservation with the new notes
+    const response = await fetch(`${GUESTY_API_URL}/reservations/${reservationId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ note: updatedNotes }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to update reservation notes:', response.status, errorText);
+      return { success: false, error: `Failed to update notes: ${response.status}` };
+    }
+
+    console.log(`Added upsell notes to reservation ${reservationId}`);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error adding upsells to reservation notes:', errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
