@@ -167,7 +167,7 @@ export async function getPendingUpsellsForReminder(
     const endTimestamp = endDate.getTime();
 
     // Get upsell IDs with check-in dates in the range
-    const requestIds = await redis.zrangebyscore(PENDING_UPSELLS_KEY, startTimestamp, endTimestamp);
+    const requestIds = await redis.zrange(PENDING_UPSELLS_KEY, startTimestamp, endTimestamp, { byScore: true });
     if (!requestIds || requestIds.length === 0) return [];
 
     const requests: UpsellRequest[] = [];
