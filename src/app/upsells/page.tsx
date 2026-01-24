@@ -7,13 +7,8 @@ import Image from 'next/image';
 import { Upsell, UpsellOption } from '@/types';
 
 const categoryLabels: Record<string, string> = {
-  all: 'All Add-ons',
-  pool_heating: 'Pool Heating',
-  early_checkin: 'Early Check-in',
-  late_checkout: 'Late Check-out',
-  extras: 'Extras',
-  service: 'Services',
-  event: 'Events',
+  add_ons: 'Add Ons',
+  themed_packages: 'Themed Packages',
 };
 
 // Cart item includes the selected option if applicable
@@ -24,7 +19,7 @@ interface CartItem {
 
 export default function UpsellsPage() {
   const [upsells, setUpsells] = useState<Upsell[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('add_ons');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({}); // upsellId -> optionId
   const [loading, setLoading] = useState(true);
@@ -41,7 +36,7 @@ export default function UpsellsPage() {
     try {
       const session = JSON.parse(sessionData);
       setPropertyId(session.listingId || null);
-      fetchUpsells('all', session.listingId);
+      fetchUpsells('add_ons', session.listingId);
     } catch {
       localStorage.removeItem('guestSession');
       router.push('/login');

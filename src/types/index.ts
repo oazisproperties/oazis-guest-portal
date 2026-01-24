@@ -66,7 +66,7 @@ export interface Upsell {
   description: string;
   price: number; // Base price or single price if no options
   currency: string;
-  category: 'pool_heating' | 'early_checkin' | 'late_checkout' | 'extras' | 'service' | 'event';
+  category: 'pool_heating' | 'early_checkin' | 'late_checkout' | 'extras' | 'service' | 'event' | 'themed_package';
   image?: string;
   options?: UpsellOption[]; // If present, user must select one option
   propertyIds?: string[]; // If set, only show for these properties. If not set, show for all.

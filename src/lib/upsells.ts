@@ -142,8 +142,15 @@ export function getUpsellsByCategory(category?: string, propertyId?: string): Up
     });
   }
 
-  // Filter by category
-  if (category && category !== 'all') {
+  // Filter by top-level category
+  if (category === 'add_ons' || category === 'all') {
+    // Return all non-themed-package upsells
+    upsells = upsells.filter((u) => u.category !== 'themed_package');
+  } else if (category === 'themed_packages') {
+    // Return only themed package upsells
+    upsells = upsells.filter((u) => u.category === 'themed_package');
+  } else if (category) {
+    // Filter by specific sub-category
     upsells = upsells.filter((u) => u.category === category);
   }
 
