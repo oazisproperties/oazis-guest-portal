@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { sendUpsellNotifications } from '@/lib/notifications';
 import { getUpsellById } from '@/lib/upsells';
+import { getReservationById, getProperty } from '@/lib/guesty';
 
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -82,6 +83,29 @@ export async function POST(request: NextRequest) {
       const totalAmount = (session.amount_total || 0) / 100;
       const currency = session.currency || 'usd';
 
+      // Fetch reservation details from Guesty
+      let guestName: string | undefined;
+      let propertyName: string | undefined;
+      let checkInDate: string | undefined;
+
+      if (reservationId && reservationId !== 'Unknown') {
+        try {
+          const reservation = await getReservationById(reservationId);
+          if (reservation) {
+            guestName = reservation.guestName;
+            checkInDate = reservation.checkIn?.split('T')[0]; // Format as YYYY-MM-DD
+
+            if (reservation.listingId) {
+              const property = await getProperty(reservation.listingId);
+              propertyName = property?.nickname || property?.title;
+            }
+          }
+        } catch (fetchError) {
+          console.error('Error fetching reservation details:', fetchError);
+          // Continue with notification even if we can't get details
+        }
+      }
+
       await sendUpsellNotifications({
         reservationId,
         items,
@@ -91,6 +115,9 @@ export async function POST(request: NextRequest) {
         paymentIntentId: typeof session.payment_intent === 'string'
           ? session.payment_intent
           : session.payment_intent?.id || 'Unknown',
+        guestName,
+        propertyName,
+        checkInDate,
       });
 
       console.log(`Notifications sent for reservation ${reservationId}`);

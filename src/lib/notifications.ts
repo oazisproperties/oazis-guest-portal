@@ -9,6 +9,10 @@ interface UpsellNotificationData {
   currency: string;
   customerEmail?: string;
   paymentIntentId: string;
+  // Additional reservation details
+  guestName?: string;
+  propertyName?: string;
+  checkInDate?: string;
 }
 
 export async function sendEmailNotification(data: UpsellNotificationData): Promise<void> {
@@ -30,20 +34,30 @@ export async function sendEmailNotification(data: UpsellNotificationData): Promi
     .map(item => `- ${item.name}: ${item.currency} ${item.price.toFixed(2)}`)
     .join('\n');
 
+  const stripePaymentUrl = `https://dashboard.stripe.com/test/payments/${data.paymentIntentId}`;
+
   const emailBody = `
 New Upsell Authorization
 
-Reservation ID: ${data.reservationId}
+Guest: ${data.guestName || 'N/A'}
+Property: ${data.propertyName || 'N/A'}
+Check-in: ${data.checkInDate || 'N/A'}
 Customer Email: ${data.customerEmail || 'N/A'}
-Payment Intent: ${data.paymentIntentId}
 
 Items Selected:
 ${itemsList}
 
 Total Authorized: ${data.currency.toUpperCase()} ${data.totalAmount.toFixed(2)}
 
+Approve/Capture Payment:
+${stripePaymentUrl}
+
 Note: This is an authorization only. The card has NOT been charged.
-To capture the payment, go to your Stripe Dashboard.
+Click the link above to capture the payment in Stripe.
+
+---
+Reservation ID: ${data.reservationId}
+Payment Intent: ${data.paymentIntentId}
 `.trim();
 
   try {
@@ -84,6 +98,8 @@ export async function sendSlackNotification(data: UpsellNotificationData): Promi
     .map(item => `• ${item.name}: ${item.currency} ${item.price.toFixed(2)}`)
     .join('\n');
 
+  const stripePaymentUrl = `https://dashboard.stripe.com/test/payments/${data.paymentIntentId}`;
+
   const slackMessage = {
     blocks: [
       {
@@ -99,7 +115,20 @@ export async function sendSlackNotification(data: UpsellNotificationData): Promi
         fields: [
           {
             type: 'mrkdwn',
-            text: `*Reservation ID:*\n${data.reservationId}`,
+            text: `*Guest:*\n${data.guestName || 'N/A'}`,
+          },
+          {
+            type: 'mrkdwn',
+            text: `*Property:*\n${data.propertyName || 'N/A'}`,
+          },
+        ],
+      },
+      {
+        type: 'section',
+        fields: [
+          {
+            type: 'mrkdwn',
+            text: `*Check-in:*\n${data.checkInDate || 'N/A'}`,
           },
           {
             type: 'mrkdwn',
@@ -123,7 +152,22 @@ export async function sendSlackNotification(data: UpsellNotificationData): Promi
           },
           {
             type: 'mrkdwn',
-            text: `*Payment Intent:*\n\`${data.paymentIntentId}\``,
+            text: `*Reservation ID:*\n\`${data.reservationId}\``,
+          },
+        ],
+      },
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: '💳 Approve Payment in Stripe',
+              emoji: true,
+            },
+            url: stripePaymentUrl,
+            style: 'primary',
           },
         ],
       },
@@ -132,7 +176,7 @@ export async function sendSlackNotification(data: UpsellNotificationData): Promi
         elements: [
           {
             type: 'mrkdwn',
-            text: '⚠️ This is an authorization only. The card has NOT been charged.',
+            text: '⚠️ This is an authorization only. The card has NOT been charged. Click the button above to capture.',
           },
         ],
       },
