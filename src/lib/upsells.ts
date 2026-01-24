@@ -106,7 +106,7 @@ export const upsellsCatalog: Upsell[] = [
     category: 'service',
   },
 
-  // Events - consolidated with size options
+  // Events - consolidated with size options (not available at Canyon View)
   {
     id: 'event',
     name: 'Event Package',
@@ -114,6 +114,7 @@ export const upsellsCatalog: Upsell[] = [
     price: 500, // Starting price
     currency: 'USD',
     category: 'event',
+    excludePropertyIds: [PROPERTY_IDS.CANYON_VIEW],
     options: [
       { id: 'event-small', label: 'Small (10-19 guests)', price: 500 },
       { id: 'event-medium', label: 'Medium (20-29 guests)', price: 1000 },
@@ -128,6 +129,10 @@ export function getUpsellsByCategory(category?: string, propertyId?: string): Up
   // Filter by property if propertyId is provided
   if (propertyId) {
     upsells = upsells.filter((u) => {
+      // Check if property is excluded
+      if (u.excludePropertyIds && u.excludePropertyIds.includes(propertyId)) {
+        return false;
+      }
       // If no propertyIds specified, available for all properties
       if (!u.propertyIds || u.propertyIds.length === 0) {
         return true;

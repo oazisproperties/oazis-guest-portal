@@ -70,6 +70,7 @@ export interface Upsell {
   image?: string;
   options?: UpsellOption[]; // If present, user must select one option
   propertyIds?: string[]; // If set, only show for these properties. If not set, show for all.
+  excludePropertyIds?: string[]; // If set, hide for these specific properties.
 }
 
 // Auth types
