@@ -1,3 +1,5 @@
+import { generateEmailHtml, generatePlainText } from './email-template';
+
 interface UpsellNotificationData {
   reservationId: string;
   items: Array<{
@@ -225,39 +227,37 @@ export async function sendGuestUpsellConfirmation(data: {
     return;
   }
 
-  const itemsList = data.items
-    .map(item => `• ${item.name} - $${item.price.toFixed(2)}`)
-    .join('\n');
+  const itemsListHtml = data.items
+    .map(item => `<li style="margin-bottom: 8px;">${item.name} - <strong>$${item.price.toFixed(2)}</strong></li>`)
+    .join('');
 
-  const emailBody = `
-Hi ${data.guestName},
+  const emailContent = `
+    <p style="margin: 0 0 16px 0;">Hi ${data.guestName},</p>
+    <p style="margin: 0 0 16px 0;">Thank you for your add-on request for your upcoming stay at <strong>${data.propertyName}</strong>!</p>
+    <p style="margin: 0 0 16px 0;">We've received your request for the following:</p>
+    <ul style="margin: 0 0 16px 0; padding-left: 20px;">
+      ${itemsListHtml}
+    </ul>
+    <p style="margin: 0 0 24px 0; font-size: 18px;"><strong>Total: $${data.totalAmount.toFixed(2)}</strong></p>
+    <p style="margin: 0 0 16px 0; padding: 16px; background-color: #F5F1EB; border-radius: 6px; border-left: 4px solid #D4874D;">
+      Your card has been authorized but <strong>NOT charged yet</strong>. We'll review your request and confirm availability. Once approved, you'll receive a confirmation email.
+    </p>
+    <p style="margin: 24px 0 8px 0;"><strong>Stay Details:</strong></p>
+    <ul style="margin: 0 0 16px 0; padding-left: 20px;">
+      <li style="margin-bottom: 8px;">Property: ${data.propertyName}</li>
+      <li style="margin-bottom: 8px;">Check-in: ${data.checkInDate}</li>
+    </ul>
+    <p style="margin: 0 0 16px 0;">If you have any questions, please don't hesitate to reach out.</p>
+  `;
 
-Thank you for your add-on request for your upcoming stay at ${data.propertyName}!
+  const emailOptions = {
+    preheader: `We've received your add-on request for ${data.propertyName}`,
+    heading: 'Add-on Request Received',
+    content: emailContent,
+  };
 
-We've received your request for the following:
-
-${itemsList}
-
-Total: $${data.totalAmount.toFixed(2)}
-
-Your card has been authorized but NOT charged yet. We'll review your request and confirm availability. Once approved, you'll receive a confirmation email.
-
-Stay Details:
-• Property: ${data.propertyName}
-• Check-in: ${data.checkInDate}
-
-If you have any questions, please don't hesitate to reach out.
-
-Take care,
-Richard and Danielle
-
-******************
-oAZis Properties
-Find your oAZis!
-www.oazisproperties.com
-stay@oazisproperties.com
-(520) 600-0434
-`.trim();
+  const htmlEmail = generateEmailHtml(emailOptions);
+  const textEmail = generatePlainText(emailOptions);
 
   try {
     const response = await fetch('https://api.resend.com/emails', {
@@ -270,7 +270,8 @@ stay@oazisproperties.com
         from: process.env.NOTIFICATION_EMAIL_FROM || 'oAZis Properties <notifications@oazisproperties.com>',
         to: data.guestEmail,
         subject: `Add-on Request Received - ${data.propertyName}`,
-        text: emailBody,
+        html: htmlEmail,
+        text: textEmail,
       }),
     });
 
@@ -300,36 +301,36 @@ export async function sendGuestChargeApprovedEmail(data: {
     return;
   }
 
-  const itemsList = data.items
-    .map(item => `• ${item.name} - $${item.price.toFixed(2)}`)
-    .join('\n');
+  const itemsListHtml = data.items
+    .map(item => `<li style="margin-bottom: 8px;">${item.name} - <strong>$${item.price.toFixed(2)}</strong></li>`)
+    .join('');
 
-  const emailBody = `
-Hi ${data.guestName},
+  const emailContent = `
+    <p style="margin: 0 0 16px 0;">Hi ${data.guestName},</p>
+    <p style="margin: 0 0 16px 0; padding: 16px; background-color: #E8F5F3; border-radius: 6px; border-left: 4px solid #5FB8AD;">
+      Great news! Your add-on request has been <strong>approved</strong> and your card has been charged.
+    </p>
+    <p style="margin: 24px 0 8px 0;"><strong>Confirmed Add-ons:</strong></p>
+    <ul style="margin: 0 0 16px 0; padding-left: 20px;">
+      ${itemsListHtml}
+    </ul>
+    <p style="margin: 0 0 24px 0; font-size: 18px;"><strong>Total Charged: $${data.totalAmount.toFixed(2)}</strong></p>
+    <p style="margin: 24px 0 8px 0;"><strong>Stay Details:</strong></p>
+    <ul style="margin: 0 0 16px 0; padding-left: 20px;">
+      <li style="margin-bottom: 8px;">Property: ${data.propertyName}</li>
+      <li style="margin-bottom: 8px;">Check-in: ${data.checkInDate}</li>
+    </ul>
+    <p style="margin: 0 0 16px 0;">We're excited to make your stay even more special! If you have any questions or need to make changes, please contact us.</p>
+  `;
 
-Great news! Your add-on request has been approved and your card has been charged.
+  const emailOptions = {
+    preheader: `Your add-ons for ${data.propertyName} have been confirmed!`,
+    heading: 'Add-ons Confirmed!',
+    content: emailContent,
+  };
 
-Confirmed Add-ons:
-${itemsList}
-
-Total Charged: $${data.totalAmount.toFixed(2)}
-
-Stay Details:
-• Property: ${data.propertyName}
-• Check-in: ${data.checkInDate}
-
-We're excited to make your stay even more special! If you have any questions or need to make changes, please contact us.
-
-Take care,
-Richard and Danielle
-
-******************
-oAZis Properties
-Find your oAZis!
-www.oazisproperties.com
-stay@oazisproperties.com
-(520) 600-0434
-`.trim();
+  const htmlEmail = generateEmailHtml(emailOptions);
+  const textEmail = generatePlainText(emailOptions);
 
   try {
     const response = await fetch('https://api.resend.com/emails', {
@@ -342,7 +343,8 @@ stay@oazisproperties.com
         from: process.env.NOTIFICATION_EMAIL_FROM || 'oAZis Properties <notifications@oazisproperties.com>',
         to: data.guestEmail,
         subject: `Add-ons Confirmed! - ${data.propertyName}`,
-        text: emailBody,
+        html: htmlEmail,
+        text: textEmail,
       }),
     });
 
