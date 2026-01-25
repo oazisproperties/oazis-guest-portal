@@ -248,13 +248,13 @@ Stay Details:
 
 If you have any questions, please don't hesitate to reach out.
 
-We look forward to hosting you!
+Take care,
+Richard and Danielle
 
-Best regards,
-The oAZis Properties Team
-
----
+******************
 oAZis Properties
+Find your oAZis!
+www.oazisproperties.com
 stay@oazisproperties.com
 (520) 600-0434
 `.trim();
@@ -320,13 +320,13 @@ Stay Details:
 
 We're excited to make your stay even more special! If you have any questions or need to make changes, please contact us.
 
-See you soon!
+Take care,
+Richard and Danielle
 
-Best regards,
-The oAZis Properties Team
-
----
+******************
 oAZis Properties
+Find your oAZis!
+www.oazisproperties.com
 stay@oazisproperties.com
 (520) 600-0434
 `.trim();
