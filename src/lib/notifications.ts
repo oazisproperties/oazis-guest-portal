@@ -68,7 +68,7 @@ Payment Intent: ${data.paymentIntentId}
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: process.env.NOTIFICATION_EMAIL_FROM || 'Oazis <notifications@oazis.com>',
+        from: process.env.NOTIFICATION_EMAIL_FROM || 'oAZis Properties <notifications@oazisproperties.com>',
         to: emailTo,
         subject: `Upsell Authorization - Reservation ${data.reservationId}`,
         text: emailBody,
