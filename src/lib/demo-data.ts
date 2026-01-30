@@ -32,10 +32,11 @@ export const demoReservation: Reservation = {
   checkIn: getFutureDate(2), // 2 days from now
   checkOut: getFutureDate(7), // 7 days from now
   checkInTime: '16:00',
-  checkOutTime: '11:00',
+  checkOutTime: '10:00',
   status: 'confirmed',
   listingId: 'demo-property-001',
   listing: demoProperty,
+  source: 'direct', // Direct booking - shows payment summary
   money: {
     totalPaid: 850,
     balanceDue: 425,

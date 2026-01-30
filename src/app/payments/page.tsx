@@ -13,26 +13,35 @@ export default function PaymentsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const sessionData = localStorage.getItem('guestSession');
-    if (!sessionData) {
-      router.push('/login');
-      return;
+    // Check session via API (session stored in HTTP-only cookie)
+    async function checkSessionAndFetch() {
+      try {
+        const sessionResponse = await fetch('/api/auth/session');
+        if (!sessionResponse.ok) {
+          router.push('/login');
+          return;
+        }
+
+        // Session is valid, fetch payments
+        fetchPayments();
+      } catch {
+        router.push('/login');
+      }
     }
 
-    try {
-      const session = JSON.parse(sessionData);
-      fetchPayments(session.reservationId);
-    } catch {
-      localStorage.removeItem('guestSession');
-      router.push('/login');
-    }
+    checkSessionAndFetch();
   }, [router]);
 
-  const fetchPayments = async (reservationId: string) => {
+  const fetchPayments = async () => {
     try {
-      const response = await fetch(`/api/reservation?id=${reservationId}`);
+      // API gets reservation ID from session cookie
+      const response = await fetch('/api/reservation');
       const data = await response.json();
       if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/login');
+          return;
+        }
         throw new Error(data.error || 'Failed to load payments');
       }
       setPayments(data.payments || []);

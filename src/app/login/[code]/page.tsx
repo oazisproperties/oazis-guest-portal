@@ -34,11 +34,15 @@ export default function LoginWithCodePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Invalid confirmation code');
+        if (response.status === 429) {
+          setError('Too many login attempts. Please wait a minute and try again.');
+        } else {
+          setError(data.error || 'Invalid portal code');
+        }
         return;
       }
 
-      localStorage.setItem('guestSession', JSON.stringify(data.session));
+      // Session is now stored via HTTP-only cookie by the server
       router.push('/dashboard');
     } catch {
       setError('Something went wrong. Please try again.');
@@ -64,7 +68,7 @@ export default function LoginWithCodePage() {
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-oazis-purple">Welcome to Your Stay</h1>
             <p className="text-gray-600 mt-2">
-              Enter your reservation code to access your stay details
+              Enter your portal code to access your stay details
             </p>
           </div>
 
@@ -74,14 +78,14 @@ export default function LoginWithCodePage() {
                 htmlFor="confirmationCode"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Confirmation Code
+                Portal Code
               </label>
               <input
                 id="confirmationCode"
                 type="text"
                 value={confirmationCode}
                 onChange={(e) => setConfirmationCode(e.target.value.toUpperCase())}
-                placeholder="e.g., GY-ABC123"
+                placeholder="e.g., ABCDEF"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-oazis-teal focus:border-transparent outline-none transition text-gray-900 uppercase"
                 required
               />
@@ -103,7 +107,7 @@ export default function LoginWithCodePage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-500">
-            Your confirmation code can be found in your booking confirmation email.
+            Your portal code can be found in your booking confirmation email.
           </p>
         </div>
 

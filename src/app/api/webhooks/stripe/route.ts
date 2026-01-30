@@ -19,7 +19,7 @@ function getStripe() {
     throw new Error('STRIPE_SECRET_KEY is not set');
   }
   return new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-12-15.clover',
+    apiVersion: '2026-01-28.clover',
   });
 }
 
@@ -51,7 +51,16 @@ export async function POST(request: NextRequest) {
 
   // Handle the checkout.session.completed event
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
+    // Type comes from the Stripe event - the checkout.session.completed event contains a session object
+    const session = event.data.object as {
+      id: string;
+      payment_intent: string | { id: string } | null;
+      metadata?: { items?: string; reservationId?: string };
+      amount_total?: number;
+      currency?: string;
+      customer_email?: string;
+      customer_details?: { email?: string };
+    };
 
     // Only process upsell checkouts (those with our metadata)
     if (!session.metadata?.items) {

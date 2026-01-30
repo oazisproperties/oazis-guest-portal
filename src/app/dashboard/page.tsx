@@ -15,27 +15,36 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const sessionData = localStorage.getItem('guestSession');
-    if (!sessionData) {
-      router.push('/login');
-      return;
+    // Check session via API (session stored in HTTP-only cookie)
+    async function checkSessionAndFetch() {
+      try {
+        const sessionResponse = await fetch('/api/auth/session');
+        if (!sessionResponse.ok) {
+          router.push('/login');
+          return;
+        }
+
+        // Session is valid, fetch reservation data
+        fetchReservationData();
+      } catch {
+        router.push('/login');
+      }
     }
 
-    try {
-      const session = JSON.parse(sessionData);
-      fetchReservationData(session.reservationId);
-    } catch {
-      localStorage.removeItem('guestSession');
-      router.push('/login');
-    }
+    checkSessionAndFetch();
   }, [router]);
 
-  const fetchReservationData = async (reservationId: string) => {
+  const fetchReservationData = async () => {
     try {
-      const response = await fetch(`/api/reservation?id=${reservationId}`);
+      // API now gets reservation ID from session cookie
+      const response = await fetch('/api/reservation');
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/login');
+          return;
+        }
         throw new Error(data.error);
       }
 
@@ -49,8 +58,12 @@ export default function DashboardPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('guestSession');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Continue with redirect even if logout API fails
+    }
     router.push('/login');
   };
 
@@ -289,55 +302,57 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Payment Summary */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h3 className="font-semibold text-oazis-purple mb-4">Payment Summary</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Total Paid</span>
-              <span className="font-medium text-oazis-teal">
-                {formatCurrency(reservation.money?.totalPaid || 0, reservation.money?.currency)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Balance Due</span>
-              <span className="font-medium text-gray-900">
-                {formatCurrency(reservation.money?.balanceDue || 0, reservation.money?.currency)}
-              </span>
-            </div>
-            {/* Next Payment Due */}
-            {(() => {
-              const scheduledPayments = payments
-                .filter((p): p is Payment & { scheduledDate: string } => p.status === 'scheduled' && !!p.scheduledDate)
-                .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
-              const nextPayment = scheduledPayments[0];
-              if (nextPayment) {
-                return (
-                  <div className="flex justify-between pt-3 border-t border-gray-100">
-                    <span className="text-gray-600">Next Payment Due</span>
-                    <div className="text-right">
-                      <span className="font-medium text-oazis-orange block">
-                        {formatCurrency(nextPayment.amount, nextPayment.currency)}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {formatDate(nextPayment.scheduledDate)}
-                      </span>
+        {/* Payment Summary - hide for Airbnb bookings (payments handled through Airbnb) */}
+        {!reservation.source?.toLowerCase().includes('airbnb') && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+            <h3 className="font-semibold text-oazis-purple mb-4">Payment Summary</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Paid</span>
+                <span className="font-medium text-oazis-teal">
+                  {formatCurrency(reservation.money?.totalPaid || 0, reservation.money?.currency)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Balance Due</span>
+                <span className="font-medium text-gray-900">
+                  {formatCurrency(reservation.money?.balanceDue || 0, reservation.money?.currency)}
+                </span>
+              </div>
+              {/* Next Payment Due */}
+              {(() => {
+                const scheduledPayments = payments
+                  .filter((p): p is Payment & { scheduledDate: string } => p.status === 'scheduled' && !!p.scheduledDate)
+                  .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
+                const nextPayment = scheduledPayments[0];
+                if (nextPayment) {
+                  return (
+                    <div className="flex justify-between pt-3 border-t border-gray-100">
+                      <span className="text-gray-600">Next Payment Due</span>
+                      <div className="text-right">
+                        <span className="font-medium text-oazis-orange block">
+                          {formatCurrency(nextPayment.amount, nextPayment.currency)}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {formatDate(nextPayment.scheduledDate)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+                  );
+                }
+                return null;
+              })()}
+            </div>
+            {payments.length > 0 && (
+              <Link
+                href="/payments"
+                className="block mt-4 text-center text-sm text-oazis-purple hover:text-oazis-purple-dark"
+              >
+                View payment history →
+              </Link>
+            )}
           </div>
-          {payments.length > 0 && (
-            <Link
-              href="/payments"
-              className="block mt-4 text-center text-sm text-oazis-purple hover:text-oazis-purple-dark"
-            >
-              View payment history →
-            </Link>
-          )}
-        </div>
+        )}
 
         {/* Upsells CTA */}
         <div className="bg-oazis-teal rounded-xl p-6 text-white">

@@ -43,30 +43,36 @@ export default function UpsellsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const sessionData = localStorage.getItem('guestSession');
-    if (!sessionData) {
-      router.push('/login');
-      return;
-    }
-    try {
-      const session = JSON.parse(sessionData);
-      setPropertyId(session.listingId || null);
-      setReservationId(session.reservationId || null);
-      fetchUpsells('add_ons', session.listingId);
-      if (session.reservationId) {
-        fetchExistingRequests(session.reservationId);
+    // Check session via API (session stored in HTTP-only cookie)
+    async function checkSessionAndFetch() {
+      try {
+        const sessionResponse = await fetch('/api/auth/session');
+        if (!sessionResponse.ok) {
+          router.push('/login');
+          return;
+        }
+
+        const { session } = await sessionResponse.json();
+        setPropertyId(session.listingId || null);
+        setReservationId(session.reservationId || null);
+        fetchUpsells('add_ons', session.listingId);
+        fetchExistingRequests();
+      } catch {
+        router.push('/login');
       }
-    } catch {
-      localStorage.removeItem('guestSession');
-      router.push('/login');
     }
+
+    checkSessionAndFetch();
   }, [router]);
 
-  const fetchExistingRequests = async (resId: string) => {
+  const fetchExistingRequests = async () => {
     try {
-      const response = await fetch(`/api/upsells/requests?reservationId=${resId}`);
-      const data = await response.json();
-      setExistingRequests(data.upsells || []);
+      // API gets reservation ID from session cookie
+      const response = await fetch('/api/upsells/requests');
+      if (response.ok) {
+        const data = await response.json();
+        setExistingRequests(data.upsells || []);
+      }
     } catch (err) {
       console.error('Failed to fetch existing requests:', err);
     }
@@ -140,17 +146,8 @@ export default function UpsellsPage() {
 
     setCheckoutLoading(true);
     try {
-      const sessionData = localStorage.getItem('guestSession');
-      let session = null;
-      if (sessionData) {
-        try {
-          session = JSON.parse(sessionData);
-        } catch {
-          // Invalid session data, continue without it
-        }
-      }
-
       // Send cart items with option IDs for proper pricing
+      // API gets reservation ID from session cookie
       const items = cart.map((item) => ({
         upsellId: item.upsell.id,
         optionId: item.selectedOption?.id,
@@ -159,13 +156,15 @@ export default function UpsellsPage() {
       const response = await fetch('/api/upsells/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items,
-          reservationId: session?.reservationId,
-        }),
+        body: JSON.stringify({ items }),
       });
 
       const data = await response.json();
+
+      if (response.status === 401) {
+        router.push('/login');
+        return;
+      }
 
       if (data.url) {
         window.location.href = data.url;

@@ -331,6 +331,9 @@ export async function getReservationByConfirmationCode(
 
     if (data.results && data.results.length > 0) {
       const res = data.results[0];
+      // Use listing's default check-in/out times (the property's official times)
+      const checkInTime = res.listing?.defaultCheckInTime || '16:00';
+      const checkOutTime = res.listing?.defaultCheckOutTime || '10:00';
       return {
         id: res._id,
         confirmationCode: res.confirmationCode || res.guestyConfirmationCode,
@@ -338,10 +341,11 @@ export async function getReservationByConfirmationCode(
         guestEmail: res.guest?.email || '',
         checkIn: res.checkInDateLocalized || res.checkIn,
         checkOut: res.checkOutDateLocalized || res.checkOut,
-        checkInTime: res.plannedArrival || res.listing?.defaultCheckInTime || '15:00',
-        checkOutTime: res.plannedDeparture || res.listing?.defaultCheckOutTime || '11:00',
+        checkInTime,
+        checkOutTime,
         status: res.status,
         listingId: res.listingId,
+        source: res.source || res.integration?.platform || undefined,
         money: {
           totalPaid: res.money?.totalPaid || 0,
           balanceDue: res.money?.balanceDue || 0,
@@ -360,9 +364,9 @@ export async function getReservationById(id: string): Promise<Reservation | null
   try {
     const res = await guestyFetch(`/reservations/${id}`);
 
-    // Use plannedArrival/plannedDeparture if set, otherwise fall back to listing defaults
-    const checkInTime = res.plannedArrival || res.listing?.defaultCheckInTime || '15:00';
-    const checkOutTime = res.plannedDeparture || res.listing?.defaultCheckOutTime || '11:00';
+    // Use listing's default check-in/out times (the property's official times)
+    const checkInTime = res.listing?.defaultCheckInTime || '16:00';
+    const checkOutTime = res.listing?.defaultCheckOutTime || '10:00';
 
     return {
       id: res._id,
@@ -375,6 +379,7 @@ export async function getReservationById(id: string): Promise<Reservation | null
       checkOutTime,
       status: res.status,
       listingId: res.listingId,
+      source: res.source || res.integration?.platform || undefined,
       money: {
         totalPaid: res.money?.totalPaid || 0,
         balanceDue: res.money?.balanceDue || 0,
@@ -393,8 +398,19 @@ export async function getProperty(listingId: string): Promise<Property | null> {
 
     // Log available custom fields for debugging
     if (listing.customFields && listing.customFields.length > 0) {
-      console.log('Available custom fields:', listing.customFields.map((f: { fieldId: string }) => f.fieldId));
+      console.log('Available custom fields:', listing.customFields.map((f: { fieldId: string; value?: string }) => ({
+        fieldId: f.fieldId,
+        hasValue: !!f.value
+      })));
     }
+
+    // Log all wifi-related fields from the listing object
+    console.log('Listing wifi fields:', {
+      wifiNetwork: listing.wifiNetwork,
+      wifiPassword: listing.wifiPassword ? '[set]' : undefined,
+      wifi: listing.wifi,
+      publicDescription: listing.publicDescription?.wifi ? '[has wifi section]' : undefined,
+    });
 
     // Get custom fields for WiFi info - try multiple field name patterns
     const wifiNameField = listing.customFields?.find(
@@ -422,12 +438,12 @@ export async function getProperty(listingId: string): Promise<Property | null> {
       }
     );
 
-    const wifiName = wifiNameField?.value;
-    const wifiPassword = wifiPasswordField?.value;
+    // Try multiple sources for WiFi data
+    const wifiName = wifiNameField?.value || listing.wifiNetwork || listing.wifi?.network || '';
+    const wifiPassword = wifiPasswordField?.value || listing.wifiPassword || listing.wifi?.password || '';
 
     // Log what we found
-    console.log('WiFi from customFields - Name:', wifiName || 'not found', 'Password:', wifiPassword ? '[set]' : 'not found');
-    console.log('WiFi from listing fields - wifiNetwork:', listing.wifiNetwork || 'not found', 'wifiPassword:', listing.wifiPassword ? '[set]' : 'not found');
+    console.log('WiFi resolved - Name:', wifiName || 'not found', 'Password:', wifiPassword ? '[set]' : 'not found');
 
     // Get cover photo from pictures array (first picture is the cover)
     const coverPhoto = listing.pictures?.[0];
@@ -450,8 +466,8 @@ export async function getProperty(listingId: string): Promise<Property | null> {
         thumbnail,
         regular: original,
       },
-      wifiName: wifiName || listing.wifiNetwork || '',
-      wifiPassword: wifiPassword || listing.wifiPassword || '',
+      wifiName,
+      wifiPassword,
       checkInInstructions: listing.checkInInstructions || '',
       houseRules: listing.houseRules || '',
     };

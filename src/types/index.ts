@@ -11,6 +11,7 @@ export interface Reservation {
   status: string;
   listingId: string;
   listing?: Property;
+  source?: string; // Booking source (e.g., 'airbnb', 'vrbo', 'direct', etc.)
   money?: {
     totalPaid: number;
     balanceDue: number;

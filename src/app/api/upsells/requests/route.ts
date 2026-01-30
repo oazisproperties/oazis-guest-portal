@@ -1,16 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getReservationUpsells } from '@/lib/upsell-requests';
+import { getSession } from '@/lib/session';
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const reservationId = searchParams.get('reservationId');
-
-  if (!reservationId) {
-    return NextResponse.json({ error: 'reservationId is required' }, { status: 400 });
+export async function GET() {
+  // Verify session
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: 'Unauthorized. Please log in.' },
+      { status: 401 }
+    );
   }
 
   try {
-    const upsells = await getReservationUpsells(reservationId);
+    // Use reservation ID from session, not from query params
+    const upsells = await getReservationUpsells(session.reservationId);
     return NextResponse.json({ upsells });
   } catch (error) {
     console.error('Error fetching upsell requests:', error);

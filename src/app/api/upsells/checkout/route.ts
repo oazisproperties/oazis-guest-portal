@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getUpsellById } from '@/lib/upsells';
+import { getSession } from '@/lib/session';
 
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error('STRIPE_SECRET_KEY is not set');
   }
   return new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-12-15.clover',
+    apiVersion: '2026-01-28.clover',
   });
 }
 
@@ -18,8 +19,19 @@ interface CartItem {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify session
+    const userSession = await getSession();
+    if (!userSession) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please log in.' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
-    const { items, reservationId } = body as { items: CartItem[]; reservationId?: string };
+    const { items } = body as { items: CartItem[] };
+    // Use reservation ID from session, not from request body
+    const reservationId = userSession.reservationId;
 
     if (!items || items.length === 0) {
       return NextResponse.json(

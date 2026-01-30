@@ -6,7 +6,7 @@ function getStripe() {
     throw new Error('STRIPE_SECRET_KEY is not set');
   }
   return new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2025-12-15.clover',
+    apiVersion: '2026-01-28.clover',
   });
 }
 

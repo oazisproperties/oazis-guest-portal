@@ -1,60 +1,34 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 
 function UpsellSuccessContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const sessionId = searchParams.get('session_id');
-    if (!sessionId) {
-      setLoading(false);
-      return;
+    // Verify session is still valid (HTTP-only cookie should persist through Stripe redirect)
+    async function verifySession() {
+      try {
+        const sessionResponse = await fetch('/api/auth/session');
+        if (!sessionResponse.ok) {
+          // Session expired or invalid - show error
+          setError(true);
+        }
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
     }
 
-    // Fetch the checkout session to restore the correct reservation
-    fetch(`/api/upsells/session?session_id=${sessionId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.reservationId) {
-          // Restore the correct reservation in localStorage
-          const sessionData = localStorage.getItem('guestSession');
-          if (sessionData) {
-            try {
-              const session = JSON.parse(sessionData);
-              if (session.reservationId !== data.reservationId) {
-                // Update to the correct reservation
-                session.reservationId = data.reservationId;
-                localStorage.setItem('guestSession', JSON.stringify(session));
-              }
-            } catch {
-              // Invalid session data, create a new one
-              localStorage.setItem(
-                'guestSession',
-                JSON.stringify({ reservationId: data.reservationId })
-              );
-            }
-          } else {
-            // No session exists, create one with the reservation ID
-            localStorage.setItem(
-              'guestSession',
-              JSON.stringify({ reservationId: data.reservationId })
-            );
-          }
-        }
-      })
-      .catch(() => {
-        setError(true);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [searchParams]);
+    verifySession();
+  }, [searchParams, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-oazis-cream-light px-4">

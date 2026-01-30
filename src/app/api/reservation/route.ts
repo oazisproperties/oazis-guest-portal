@@ -1,22 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getReservationById, getProperty, getPayments } from '@/lib/guesty';
 import { demoReservation, demoPayments } from '@/lib/demo-data';
 import { getHouseManualUrl } from '@/lib/upsells';
+import { getSession } from '@/lib/session';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const reservationId = searchParams.get('id');
+    // Verify session - user can only access their own reservation
+    const session = await getSession();
 
-    if (!reservationId) {
+    if (!session) {
       return NextResponse.json(
-        { error: 'Reservation ID is required' },
-        { status: 400 }
+        { error: 'Unauthorized. Please log in.' },
+        { status: 401 }
       );
     }
 
+    const reservationId = session.reservationId;
+
     // Check for demo mode
-    if (reservationId.startsWith('demo-')) {
+    if (session.isDemo || reservationId.startsWith('demo-')) {
       const houseManualUrl = getHouseManualUrl(demoReservation.listingId);
       return NextResponse.json({
         reservation: demoReservation,
